@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableWithoutFeedback, Dimensions, StatusBar, Animated } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { StyleSheet, View, Text, TouchableWithoutFeedback, Dimensions, StatusBar } from 'react-native';
 import { GameEngine } from 'react-native-game-engine';
 
 // Import game components
@@ -52,40 +52,50 @@ const Physics = (entities, { touches, dispatch, time }) => {
   }
   
   // Move obstacles
-  Object.keys(entities).forEach(key => {
-    if (key.includes('obstacle') && entities[key] && entities[key].position) {
-      entities[key].position.x -= GAME_SPEED;
-      
-      // Check if obstacle has gone off screen
-      if (entities[key].position.x < -OBSTACLE_WIDTH) {
-        delete entities[key];
-        if (dispatch) dispatch({ type: 'score' });
+  if (entities) {
+    Object.keys(entities).forEach(key => {
+      if (key.includes('obstacle') && entities[key] && entities[key].position) {
+        entities[key].position.x -= GAME_SPEED;
+        
+        // Check if obstacle has gone off screen
+        if (entities[key].position.x < -OBSTACLE_WIDTH) {
+          delete entities[key];
+          if (dispatch) dispatch({ type: 'score' });
+        }
+        
+        // Check for collision with character
+        if (checkCollision(character, entities[key])) {
+          if (dispatch) dispatch({ type: 'game-over' });
+        }
       }
-      
-      // Check for collision with character
-      if (checkCollision(character, entities[key])) {
-        if (dispatch) dispatch({ type: 'game-over' });
-      }
-    }
-  });
+    });
+  }
   
   return entities;
 };
 
-// Obstacle generator system
-const ObstacleGenerator = (entities, { time, dispatch }) => {
-  if (!entities || !time || time.current === undefined) {
-    console.log("Missing time or entities in ObstacleGenerator");
+// Obstacle generator system - simplified for reliability
+const ObstacleGenerator = (entities, { time }) => {
+  if (!entities) {
     return entities || {};
   }
   
-  // Generate new obstacle every ~2 seconds
-  if (time.current % 120 === 0) {
-    const obstacleHeight = Math.random() > 0.7 ? 90 : 40; // Two types of obstacles
+  // Create a counter if it doesn't exist
+  if (!entities.obstacleTimer) {
+    entities.obstacleTimer = 0;
+  }
+  
+  // Increment timer
+  entities.obstacleTimer += 1;
+  
+  // Generate new obstacle approximately every 2 seconds (120 frames at 60fps)
+  if (entities.obstacleTimer >= 100) {
+    const obstacleHeight = Math.random() > 0.5 ? 90 : 40; // Two types of obstacles
     const type = obstacleHeight === 90 ? 'large' : 'small';
     
     const newObstacleId = `obstacle-${Math.floor(Math.random() * 1000000)}`;
     
+    // Create the obstacle entity
     entities[newObstacleId] = {
       position: { 
         x: SCREEN_WIDTH + OBSTACLE_WIDTH,
@@ -95,6 +105,11 @@ const ObstacleGenerator = (entities, { time, dispatch }) => {
       type,
       renderer: Obstacle
     };
+    
+    // Reset timer
+    entities.obstacleTimer = 0;
+    
+    console.log("Created obstacle:", newObstacleId);
   }
   
   return entities;
@@ -126,13 +141,13 @@ export default function App() {
   const [gameEngine, setGameEngine] = useState(null);
   const [score, setScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
-  const [initialEntities, setInitialEntities] = useState(null);
   
-  // Set up initial game entities
-  useEffect(() => {
-    const entities = {
+  // Function to create entities
+  const setupEntities = () => {
+    return {
       physics: { engine: Physics },
       obstacleGenerator: { engine: ObstacleGenerator },
+      obstacleTimer: 0,
       character: {
         position: { x: SCREEN_WIDTH / 4, y: SCREEN_HEIGHT - FLOOR_HEIGHT - CHARACTER_SIZE.height / 2 },
         size: CHARACTER_SIZE,
@@ -166,19 +181,18 @@ export default function App() {
         }
       }
     };
-    
-    setInitialEntities(entities);
-  }, []);
+  };
   
   // Reset game state
   const resetGame = () => {
+    console.log("Resetting game");
     setScore(0);
     setGameOver(false);
     setRunning(true);
     
-    if (gameEngine && initialEntities) {
+    if (gameEngine) {
       try {
-        gameEngine.swap(initialEntities);
+        gameEngine.swap(setupEntities());
       } catch (error) {
         console.log("Error resetting game:", error);
       }
@@ -190,6 +204,7 @@ export default function App() {
     if (gameOver) {
       resetGame();
     } else if (!running) {
+      console.log("Starting game");
       setRunning(true);
     }
   };
@@ -199,6 +214,7 @@ export default function App() {
     if (!e) return;
     
     if (e.type === 'game-over') {
+      console.log("Game over event");
       setRunning(false);
       setGameOver(true);
     } else if (e.type === 'score') {
@@ -211,8 +227,10 @@ export default function App() {
     if (gameEngine) {
       try {
         if (!running) {
+          console.log("Stopping game engine");
           gameEngine.stop();
         } else {
+          console.log("Starting game engine");
           gameEngine.start();
         }
       } catch (error) {
@@ -221,13 +239,10 @@ export default function App() {
     }
   }, [running, gameEngine]);
   
-  if (!initialEntities) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.loadingText}>Loading game...</Text>
-      </View>
-    );
-  }
+  // Force the game to start in development mode
+  useEffect(() => {
+    console.log("Component mounted");
+  }, []);
   
   return (
     <TouchableWithoutFeedback onPress={handleTap}>
@@ -237,7 +252,7 @@ export default function App() {
           ref={(ref) => { setGameEngine(ref) }}
           style={styles.gameContainer}
           systems={[Physics, ObstacleGenerator]}
-          entities={initialEntities}
+          entities={setupEntities()}
           running={running}
           onEvent={onEvent}
         />
@@ -329,12 +344,5 @@ const styles = StyleSheet.create({
     textShadowColor: '#000',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 1
-  },
-  loadingText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-    textAlign: 'center',
-    marginTop: 100
   }
 });
