@@ -1,3 +1,12 @@
+environment:
+  # Define all environment variables here
+  vars:
+    BUNDLE_ID: "com.glglak.tapdash"
+    VERSION_CODE: "1"
+  groups:
+    - google_play_credentials
+    - keystore_credentials
+
 cache:
   cache_paths:
     - ~/.npm
@@ -22,7 +31,7 @@ scripts:
   
   - name: Update App Configuration
     script: |
-      # Use jq for safer JSON manipulation
+      # Use environment variables for app configuration
       jq --arg package "$BUNDLE_ID" '.expo.android.package = $package' app.json > app.json.tmp
       mv app.json.tmp app.json
       
@@ -35,7 +44,7 @@ scripts:
   
   - name: Create Keystore
     script: |
-      # Generate keystore with more secure parameters
+      # Generate keystore using environment variables
       keytool -genkeypair -v \
         -keystore codemagic.keystore \
         -alias upload \
@@ -67,11 +76,17 @@ scripts:
       cd android
       ./gradlew bundleRelease
   
-  - name: Deploy to Google Play (Optional)
+  - name: Deploy to Google Play
     script: |
-      # Ensure you've set up Google Play credentials in Codemagic
+      # Check if Google Play credentials are available
       if [ -n "$GOOGLE_PLAY_CREDENTIALS" ]; then
+        # Create fastlane directory if it doesn't exist
+        mkdir -p fastlane
+        
+        # Decode and save Google Play credentials
         echo "$GOOGLE_PLAY_CREDENTIALS" | base64 --decode > fastlane/google-play-credentials.json
+        
+        # Deploy to Google Play
         fastlane supply \
           --aab $(find android -name "*.aab") \
           --json_key fastlane/google-play-credentials.json \
@@ -89,10 +104,3 @@ publishing:
   email:
     recipients:
       - karem.kamel@gmail.com
-  
-  # Optional: Slack or other notifications
-  slack:
-    channel: '#mobile-builds'
-    notify_on_build_start: true
-    notify_on_build_success: true
-    notify_on_build_failure: true
