@@ -9,19 +9,33 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#87CEEB"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0,
+      "enabled": true
     },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.yourusername.tapdash",
+      "buildNumber": "1.0.0",
+      "infoPlist": {
+        "UIBackgroundModes": ["audio"],
+        "NSHapticFeedbackHapticsEnabled": true
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      }
+        "backgroundColor": "#87CEEB"
+      },
+      "package": "com.yourusername.tapdash",
+      "versionCode": 1,
+      "permissions": ["VIBRATE"],
+      "softwareKeyboardLayoutMode": "pan"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -30,7 +44,26 @@
       "tool": "expo-cli"
     },
     "extra": {
-      "disableKeepAwake": true
-    }
+      "disableKeepAwake": true,
+      "eas": {
+        "projectId": "your-project-id-from-expo"
+      }
+    },
+    "plugins": [
+      "expo-av",
+      "expo-updates"
+    ],
+    "description": "A simple and addictive endless runner game where you tap to jump over obstacles.",
+    "primaryColor": "#87CEEB",
+    "notification": {
+      "color": "#87CEEB",
+      "icon": "./assets/notification-icon.png"
+    },
+    "androidStatusBar": {
+      "backgroundColor": "#87CEEB",
+      "barStyle": "dark-content",
+      "translucent": false
+    },
+    "privacy": "public"
   }
 }
