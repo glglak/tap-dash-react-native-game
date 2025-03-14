@@ -71,7 +71,7 @@ const ObstacleGenerator = (entities, { time, dispatch }) => {
     const height = Math.random() > 0.7 ? 90 : 40; // Two types of obstacles
     const type = height === 90 ? 'large' : 'small';
     
-    const newObstacleId = \`obstacle-\${Math.floor(Math.random() * 1000000)}\`;
+    const newObstacleId = `obstacle-${Math.floor(Math.random() * 1000000)}`;
     
     entities[newObstacleId] = {
       position: { 
