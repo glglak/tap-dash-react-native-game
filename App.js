@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableWithoutFeedback, Dimensions, StatusBar } from 'react-native';
+import { StyleSheet, View, Text, TouchableWithoutFeedback, Dimensions, StatusBar, Animated } from 'react-native';
 import { GameEngine } from 'react-native-game-engine';
-// Remove the expo-keep-awake import if it's causing issues
 
 // Import game components
 import Character from './components/Character';
@@ -23,6 +22,7 @@ const GAME_SPEED = 5;
 // Physics system
 const Physics = (entities, { touches, dispatch, time }) => {
   if (!entities || !entities.character || !entities.character.position) {
+    console.log("Missing entities in Physics system");
     return entities || {};
   }
 
@@ -31,7 +31,7 @@ const Physics = (entities, { touches, dispatch, time }) => {
   // Handle jump
   if (touches && Array.isArray(touches)) {
     touches.filter(t => t && t.type === 'press').forEach(() => {
-      if (character.position.y >= SCREEN_HEIGHT - FLOOR_HEIGHT - CHARACTER_SIZE.height) {
+      if (character.position.y >= SCREEN_HEIGHT - FLOOR_HEIGHT - CHARACTER_SIZE.height / 2) {
         character.velocity.y = JUMP_FORCE;
         character.jumping = true;
       }
@@ -52,31 +52,30 @@ const Physics = (entities, { touches, dispatch, time }) => {
   }
   
   // Move obstacles
-  if (entities) {
-    Object.keys(entities).forEach(key => {
-      if (key.includes('obstacle') && entities[key] && entities[key].position) {
-        entities[key].position.x -= GAME_SPEED;
-        
-        // Check if obstacle has gone off screen
-        if (entities[key].position.x < -OBSTACLE_WIDTH) {
-          delete entities[key];
-          if (dispatch) dispatch({ type: 'score' });
-        }
-        
-        // Check for collision with character
-        if (checkCollision(character, entities[key])) {
-          if (dispatch) dispatch({ type: 'game-over' });
-        }
+  Object.keys(entities).forEach(key => {
+    if (key.includes('obstacle') && entities[key] && entities[key].position) {
+      entities[key].position.x -= GAME_SPEED;
+      
+      // Check if obstacle has gone off screen
+      if (entities[key].position.x < -OBSTACLE_WIDTH) {
+        delete entities[key];
+        if (dispatch) dispatch({ type: 'score' });
       }
-    });
-  }
+      
+      // Check for collision with character
+      if (checkCollision(character, entities[key])) {
+        if (dispatch) dispatch({ type: 'game-over' });
+      }
+    }
+  });
   
   return entities;
 };
 
 // Obstacle generator system
 const ObstacleGenerator = (entities, { time, dispatch }) => {
-  if (!entities || !time || !time.current) {
+  if (!entities || !time || time.current === undefined) {
+    console.log("Missing time or entities in ObstacleGenerator");
     return entities || {};
   }
   
@@ -127,10 +126,11 @@ export default function App() {
   const [gameEngine, setGameEngine] = useState(null);
   const [score, setScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
+  const [initialEntities, setInitialEntities] = useState(null);
   
   // Set up initial game entities
-  const setupEntities = () => {
-    return {
+  useEffect(() => {
+    const entities = {
       physics: { engine: Physics },
       obstacleGenerator: { engine: ObstacleGenerator },
       character: {
@@ -166,16 +166,19 @@ export default function App() {
         }
       }
     };
-  };
+    
+    setInitialEntities(entities);
+  }, []);
   
   // Reset game state
   const resetGame = () => {
     setScore(0);
     setGameOver(false);
     setRunning(true);
-    if (gameEngine) {
+    
+    if (gameEngine && initialEntities) {
       try {
-        gameEngine.swap(setupEntities());
+        gameEngine.swap(initialEntities);
       } catch (error) {
         console.log("Error resetting game:", error);
       }
@@ -218,6 +221,14 @@ export default function App() {
     }
   }, [running, gameEngine]);
   
+  if (!initialEntities) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.loadingText}>Loading game...</Text>
+      </View>
+    );
+  }
+  
   return (
     <TouchableWithoutFeedback onPress={handleTap}>
       <View style={styles.container}>
@@ -226,7 +237,7 @@ export default function App() {
           ref={(ref) => { setGameEngine(ref) }}
           style={styles.gameContainer}
           systems={[Physics, ObstacleGenerator]}
-          entities={setupEntities()}
+          entities={initialEntities}
           running={running}
           onEvent={onEvent}
         />
@@ -318,5 +329,12 @@ const styles = StyleSheet.create({
     textShadowColor: '#000',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 1
+  },
+  loadingText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff',
+    textAlign: 'center',
+    marginTop: 100
   }
 });
