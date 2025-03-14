@@ -28,6 +28,7 @@ let jumpSound = null;
 let scoreSound = null;
 let gameOverSound = null;
 let backgroundMusic = null;
+let milestone5Sound = null;
 
 // Load sounds
 const loadSounds = async () => {
@@ -54,6 +55,12 @@ const loadSounds = async () => {
       require('./assets/sounds/game-over.mp3')
     );
     gameOverSound = gameOver;
+    
+    // Load the special milestone sound for every 5 points
+    const { sound: milestone } = await Audio.Sound.createAsync(
+      require('./assets/sounds/milestone5.mp3')
+    );
+    milestone5Sound = milestone;
   } catch (error) {
     console.log("Error loading sounds:", error);
   }
@@ -158,7 +165,6 @@ const Physics = (entities, { touches, dispatch, time }) => {
           delete entities[key];
           if (dispatch) {
             dispatch({ type: 'score' });
-            playSound(scoreSound);
           }
         }
         
@@ -302,6 +308,7 @@ export default function App() {
       if (jumpSound) jumpSound.unloadAsync();
       if (scoreSound) scoreSound.unloadAsync();
       if (gameOverSound) gameOverSound.unloadAsync();
+      if (milestone5Sound) milestone5Sound.unloadAsync();
     };
   }, []);
   
@@ -409,6 +416,18 @@ export default function App() {
       const newScore = score + 1;
       setScore(newScore);
       
+      // Play normal score sound
+      playSound(scoreSound);
+      
+      // Check if we hit a multiple of 5 - play special milestone sound
+      if (newScore % 5 === 0) {
+        // Play special milestone sound
+        playSound(milestone5Sound);
+        
+        // Add additional feedback for milestone
+        Vibration.vibrate([0, 70, 50, 70]);
+      }
+      
       // Update the score in game entities
       if (gameEngine && gameEngine.entities) {
         gameEngine.entities.score = newScore;
@@ -468,6 +487,7 @@ export default function App() {
               <Text style={styles.instructionText}>• Tap to jump</Text>
               <Text style={styles.instructionText}>• Hold for higher jump</Text>
               <Text style={styles.instructionText}>• Double tap for double jump</Text>
+              <Text style={styles.instructionText}>• Every 5 points gives special bonus!</Text>
             </View>
             {highScore > 0 && (
               <Text style={styles.highScoreText}>High Score: {highScore}</Text>
