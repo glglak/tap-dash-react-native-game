@@ -7,6 +7,8 @@ workflows:
       node: 16.14.2
       npm: 8.5.0
       java: 11
+      vars:
+        GPLAY_CREDENTIALS: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
     cache:
       cache_paths:
         - ~/.npm
@@ -26,10 +28,6 @@ workflows:
         script: |
           npm install -g expo-cli
           npm install -g eas-cli
-      - name: Prepare Google Play credentials
-        script: |
-          echo $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS > /tmp/google-play-key.json
-          echo "Wrote Google Play key to /tmp/google-play-key.json"
       - name: Prebuild for Android
         script: |
           npx expo prebuild -p android --no-install
@@ -62,5 +60,5 @@ workflows:
         recipients:
           - karem.kamel@gmail.com
       google_play:
-        credentials: /tmp/google-play-key.json
+        credentials: $GPLAY_CREDENTIALS
         track: internal
