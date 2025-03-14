@@ -54,7 +54,7 @@ workflows:
     publishing:
       email:
         recipients:
-          - your.email@example.com
+          - karem.kamel@gmail.com
       google_play:
         credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
         track: internal
