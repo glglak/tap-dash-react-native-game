@@ -2,6 +2,11 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 
 const Character = (props) => {
+  if (!props || !props.position || !props.size) {
+    console.log("Missing props in Character component");
+    return null;
+  }
+  
   const { position, size, jumping } = props;
   
   // Animation state based on jumping
@@ -9,16 +14,26 @@ const Character = (props) => {
   
   return (
     <View
-      style={{
-        position: 'absolute',
-        left: position.x - size.width / 2,
-        top: position.y - size.height / 2,
-        width: size.width,
-        height: size.height,
-        backgroundColor: '#FF5722',
-        borderRadius: 8,
-        ...characterStyle
-      }}
+      style={[
+        styles.character,
+        {
+          position: 'absolute',
+          left: position.x - size.width / 2,
+          top: position.y - size.height / 2,
+          width: size.width,
+          height: size.height,
+          backgroundColor: '#FF0000', // Bright red to make it more visible
+          borderRadius: 8,
+          borderWidth: 2,
+          borderColor: '#000',
+          elevation: 5, // For Android shadow
+          shadowColor: '#000', // For iOS shadow
+          shadowOffset: { width: 2, height: 2 },
+          shadowOpacity: 0.8,
+          shadowRadius: 2,
+        },
+        characterStyle
+      ]}
     >
       {/* Character face - simple representation */}
       <View style={styles.eye} />
@@ -29,6 +44,9 @@ const Character = (props) => {
 };
 
 const styles = StyleSheet.create({
+  character: {
+    zIndex: 1000, // Make sure character is on top
+  },
   running: {
     transform: [{ rotate: '0deg' }]
   },
