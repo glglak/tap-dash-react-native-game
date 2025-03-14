@@ -26,17 +26,48 @@ workflows:
         script: |
           npm install -g expo-cli
           npm install -g eas-cli
+      - name: Check package.json for Android app ID
+        script: |
+          echo "Updating Android app ID in app.json"
+          jq '.expo.android.package = "com.glglak.tapdash"' app.json > app.json.new
+          mv app.json.new app.json
+          jq '.expo.android.versionCode = 1' app.json > app.json.new
+          mv app.json.new app.json
       - name: Prebuild for Android
         script: |
           npx expo prebuild -p android --no-install
-      - name: Build debug APK (skip signing)
+      - name: Create keystore and signing config
+        script: |
+          echo "Creating keystore for signing"
+          keytool -genkey -v -keystore codemagic.keystore -alias upload -keyalg RSA -keysize 2048 -validity 10000 -storepass $CM_KEYSTORE_PASSWORD -keypass $CM_KEY_PASSWORD -dname "CN=Tap Dash,O=Tap Dash,C=US"
+          echo "Creating signing config in build.gradle"
+          
+          # Create signing config in app/build.gradle
+          GRADLE_FILE="android/app/build.gradle"
+          
+          # Insert signing config before buildTypes block
+          perl -0777 -i -pe 's/(buildTypes \{)/"signingConfigs {\n        release {\n            storeFile file(\"..\/..\/codemagic.keystore\")\n            storePassword \"$ENV{CM_KEYSTORE_PASSWORD}\"\n            keyAlias \"upload\"\n            keyPassword \"$ENV{CM_KEY_PASSWORD}\"\n        }\n    }\n\n    $1"/g' $GRADLE_FILE
+          
+          # Update debug buildType to use release signing
+          perl -0777 -i -pe 's/(debug \{[^\}]+?)(\n\s+})/$1\n            signingConfig signingConfigs.release$2/g' $GRADLE_FILE
+          
+          # Update release buildType to use release signing
+          perl -0777 -i -pe 's/(release \{[^\}]+?)(\n\s+})/$1\n            signingConfig signingConfigs.release$2/g' $GRADLE_FILE
+          
+          cat $GRADLE_FILE
+      - name: Build Android App Bundle for Play Store
         script: |
           cd android
-          # Build a debug APK which doesn't require signing
-          ./gradlew assembleDebug
+          ./gradlew bundleRelease
     artifacts:
+      - android/app/build/outputs/**/*.aab
       - android/app/build/outputs/**/*.apk
+      - codemagic.keystore
     publishing:
       email:
         recipients:
           - karem.kamel@gmail.com
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+        submit_as_draft: true
