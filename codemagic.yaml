@@ -47,14 +47,10 @@ workflows:
       - name: Build Android release
         script: |
           cd android
-          ./gradlew bundleRelease
+          ./gradlew assembleRelease
     artifacts:
-      - android/app/build/outputs/**/*.aab
       - android/app/build/outputs/**/*.apk
     publishing:
       email:
         recipients:
           - karem.kamel@gmail.com
-      google_play:
-        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
-        track: internal
