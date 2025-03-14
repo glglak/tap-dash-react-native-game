@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, TouchableWithoutFeedback, Dimensions, StatusBar } from 'react-native';
 import { GameEngine } from 'react-native-game-engine';
+// Remove the expo-keep-awake import if it's causing issues
 
 // Import game components
 import Character from './components/Character';
@@ -173,7 +174,11 @@ export default function App() {
     setGameOver(false);
     setRunning(true);
     if (gameEngine) {
-      gameEngine.swap(setupEntities());
+      try {
+        gameEngine.swap(setupEntities());
+      } catch (error) {
+        console.log("Error resetting game:", error);
+      }
     }
   };
   
@@ -198,13 +203,17 @@ export default function App() {
     }
   };
   
-  // Start game with entities
+  // Start/stop game with entities based on running state
   useEffect(() => {
     if (gameEngine) {
-      if (!running) {
-        gameEngine.stop();
-      } else {
-        gameEngine.start();
+      try {
+        if (!running) {
+          gameEngine.stop();
+        } else {
+          gameEngine.start();
+        }
+      } catch (error) {
+        console.log("Error controlling game engine:", error);
       }
     }
   }, [running, gameEngine]);
