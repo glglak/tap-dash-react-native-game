@@ -29,26 +29,11 @@ workflows:
       - name: Prebuild for Android
         script: |
           npx expo prebuild -p android --no-install
-      - name: Set up app/build.gradle
-        script: |
-          if [ -f "android/app/build.gradle" ]; then
-            echo "Updating Android signing config in app/build.gradle"
-            sed -i.bak 's/signingConfig signingConfigs.debug/signingConfig signingConfigs.release/' android/app/build.gradle || true
-          fi
-      - name: Set up keystore properties
-        script: |
-          echo "Setting up keystore properties"
-          cat >> android/key.properties << EOF
-          storePassword=$CM_KEYSTORE_PASSWORD
-          keyPassword=$CM_KEY_PASSWORD
-          keyAlias=$CM_KEY_ALIAS
-          storeFile=/tmp/keystore.keystore
-          EOF
-      - name: Build Android release
+      - name: Build debug APK (skip signing)
         script: |
           cd android
-          # Build APK only
-          ./gradlew assembleRelease
+          # Build a debug APK which doesn't require signing
+          ./gradlew assembleDebug
     artifacts:
       - android/app/build/outputs/**/*.apk
     publishing:
