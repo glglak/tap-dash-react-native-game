@@ -1,0 +1,60 @@
+workflows:
+  react-native-android:
+    name: Tap Dash Android
+    max_build_duration: 30
+    instance_type: mac_mini_m1
+    environment:
+      node: 16.14.2
+      npm: 8.5.0
+      java: 11
+    cache:
+      cache_paths:
+        - ~/.npm
+        - ~/.gradle/caches
+        - ~/.gradle/wrapper
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+    scripts:
+      - name: Install dependencies
+        script: |
+          npm ci
+      - name: Setup Expo and EAS
+        script: |
+          npm install -g expo-cli
+          npm install -g eas-cli
+      - name: Prebuild for Android
+        script: |
+          npx expo prebuild -p android --no-install
+      - name: Set up app/build.gradle
+        script: |
+          if [ -f "android/app/build.gradle" ]; then
+            echo "Updating Android signing config in app/build.gradle"
+            sed -i.bak 's/signingConfig signingConfigs.debug/signingConfig signingConfigs.release/' android/app/build.gradle || true
+          fi
+      - name: Set up keystore properties
+        script: |
+          echo "Setting up keystore properties"
+          cat >> android/key.properties << EOF
+          storePassword=$CM_KEYSTORE_PASSWORD
+          keyPassword=$CM_KEY_PASSWORD
+          keyAlias=$CM_KEY_ALIAS
+          storeFile=/tmp/keystore.keystore
+          EOF
+      - name: Build Android release
+        script: |
+          cd android
+          ./gradlew bundleRelease
+    artifacts:
+      - android/app/build/outputs/**/*.aab
+      - android/app/build/outputs/**/*.apk
+    publishing:
+      email:
+        recipients:
+          - your.email@example.com
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
