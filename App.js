@@ -8,7 +8,8 @@ import Obstacle from './components/Obstacle';
 import Background from './components/Background';
 
 // Get screen dimensions for proper positioning
-const { width, height } = Dimensions.get('window');
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 // Game constants
 const GRAVITY = 0.8;
@@ -24,7 +25,7 @@ const Physics = (entities, { touches, dispatch, time }) => {
   
   // Handle jump
   touches.filter(t => t.type === 'press').forEach(() => {
-    if (character.position.y >= height - FLOOR_HEIGHT - CHARACTER_SIZE.height) {
+    if (character.position.y >= SCREEN_HEIGHT - FLOOR_HEIGHT - CHARACTER_SIZE.height) {
       character.velocity.y = JUMP_FORCE;
       character.jumping = true;
     }
@@ -37,8 +38,8 @@ const Physics = (entities, { touches, dispatch, time }) => {
   character.position.y += character.velocity.y;
   
   // Keep character above the floor
-  if (character.position.y > height - FLOOR_HEIGHT - CHARACTER_SIZE.height / 2) {
-    character.position.y = height - FLOOR_HEIGHT - CHARACTER_SIZE.height / 2;
+  if (character.position.y > SCREEN_HEIGHT - FLOOR_HEIGHT - CHARACTER_SIZE.height / 2) {
+    character.position.y = SCREEN_HEIGHT - FLOOR_HEIGHT - CHARACTER_SIZE.height / 2;
     character.velocity.y = 0;
     character.jumping = false;
   }
@@ -68,17 +69,17 @@ const Physics = (entities, { touches, dispatch, time }) => {
 const ObstacleGenerator = (entities, { time, dispatch }) => {
   // Generate new obstacle every ~2 seconds
   if (time.current % 120 === 0) {
-    const height = Math.random() > 0.7 ? 90 : 40; // Two types of obstacles
-    const type = height === 90 ? 'large' : 'small';
+    const obstacleHeight = Math.random() > 0.7 ? 90 : 40; // Two types of obstacles
+    const type = obstacleHeight === 90 ? 'large' : 'small';
     
     const newObstacleId = `obstacle-${Math.floor(Math.random() * 1000000)}`;
     
     entities[newObstacleId] = {
       position: { 
-        x: width + OBSTACLE_WIDTH,
-        y: height - FLOOR_HEIGHT - height / 2 
+        x: SCREEN_WIDTH + OBSTACLE_WIDTH,
+        y: SCREEN_HEIGHT - FLOOR_HEIGHT - obstacleHeight / 2 
       },
-      size: { width: OBSTACLE_WIDTH, height },
+      size: { width: OBSTACLE_WIDTH, height: obstacleHeight },
       type,
       renderer: Obstacle
     };
@@ -117,7 +118,7 @@ export default function App() {
       physics: { engine: Physics },
       obstacleGenerator: { engine: ObstacleGenerator },
       character: {
-        position: { x: width / 4, y: height - FLOOR_HEIGHT - CHARACTER_SIZE.height / 2 },
+        position: { x: SCREEN_WIDTH / 4, y: SCREEN_HEIGHT - FLOOR_HEIGHT - CHARACTER_SIZE.height / 2 },
         size: CHARACTER_SIZE,
         velocity: { y: 0 },
         jumping: false,
@@ -125,12 +126,12 @@ export default function App() {
       },
       background: {
         position: { x: 0, y: 0 },
-        size: { width, height },
+        size: { width: SCREEN_WIDTH, height: SCREEN_HEIGHT },
         renderer: Background
       },
       floor: {
-        position: { x: width / 2, y: height - FLOOR_HEIGHT / 2 },
-        size: { width, height: FLOOR_HEIGHT },
+        position: { x: SCREEN_WIDTH / 2, y: SCREEN_HEIGHT - FLOOR_HEIGHT / 2 },
+        size: { width: SCREEN_WIDTH, height: FLOOR_HEIGHT },
         renderer: (props) => {
           const { position, size } = props;
           return (
