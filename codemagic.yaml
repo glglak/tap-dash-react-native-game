@@ -1,106 +1,104 @@
-environment:
-  # Define all environment variables here
-  vars:
-    BUNDLE_ID: "com.glglak.tapdash"
-    VERSION_CODE: "1"
-  groups:
-    - google_play_credentials
-    - keystore_credentials
+workflows:
+  react-native-android:
+    name: Tap Dash Android
+    max_build_duration: 30
+    instance_type: mac_mini_m1
+    environment:
+      node: 18.18.0
+      npm: 9.5.1
+      java: 17
+      vars:
+        BUNDLE_ID: "com.glglak.tapdash"
+        VERSION_CODE: "1"
+      groups:
+        - google_play_credentials
+        - keystore_credentials
 
-cache:
-  cache_paths:
-    - ~/.npm
-    - ~/.gradle/caches
-    - ~/.gradle/wrapper
-    - node_modules
+    cache:
+      cache_paths:
+        - ~/.npm
+        - ~/.gradle/caches
+        - ~/.gradle/wrapper
+        - node_modules
 
-triggering:
-  events:
-    - push
-  branch_patterns:
-    - pattern: main
-      include: true
-    - pattern: release/*
-      include: true
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+        - pattern: release/*
+          include: true
 
-scripts:
-  - name: Install dependencies
-    script: |
-      npm ci
-      npm install -g expo-cli eas-cli
-  
-  - name: Update App Configuration
-    script: |
-      # Use environment variables for app configuration
-      jq --arg package "$BUNDLE_ID" '.expo.android.package = $package' app.json > app.json.tmp
-      mv app.json.tmp app.json
+    scripts:
+      - name: Install dependencies
+        script: |
+          npm ci
+          npm install -g expo-cli eas-cli
       
-      jq --arg version_code "$VERSION_CODE" '.expo.android.versionCode = ($version_code | tonumber)' app.json > app.json.tmp
-      mv app.json.tmp app.json
-  
-  - name: Prebuild Android
-    script: |
-      npx expo prebuild -p android --clean
-  
-  - name: Create Keystore
-    script: |
-      # Generate keystore using environment variables
-      keytool -genkeypair -v \
-        -keystore codemagic.keystore \
-        -alias upload \
-        -keyalg RSA \
-        -keysize 4096 \
-        -validity 10000 \
-        -storepass "$CM_KEYSTORE_PASSWORD" \
-        -keypass "$CM_KEY_PASSWORD" \
-        -dname "CN=Tap Dash,OU=Mobile Development,O=Your Organization,L=Your City,S=Your State,C=US"
-  
-  - name: Configure Gradle Signing
-    script: |
-      GRADLE_FILE="android/app/build.gradle"
+      - name: Update App Configuration
+        script: |
+          jq --arg package "$BUNDLE_ID" '.expo.android.package = $package' app.json > app.json.tmp
+          mv app.json.tmp app.json
+          
+          jq --arg version_code "$VERSION_CODE" '.expo.android.versionCode = ($version_code | tonumber)' app.json > app.json.tmp
+          mv app.json.tmp app.json
       
-      # Advanced Gradle signing configuration
-      perl -0777 -i -pe '
-        s/(buildTypes \{)/
-        "signingConfigs {\n        release {\n            storeFile file(\"..\/..\/codemagic.keystore\")\n            storePassword System.getenv(\"CM_KEYSTORE_PASSWORD\")\n            keyAlias \"upload\"\n            keyPassword System.getenv(\"CM_KEY_PASSWORD\")\n        }\n    }\n\n    $1"/ge;
-        
-        s/(release \{[^\}]+?)(\n\s+})/
-        "$1\n            signingConfig signingConfigs.release$2"/ge;
-        
-        s/(debug \{[^\}]+?)(\n\s+})/
-        "$1\n            signingConfig signingConfigs.release$2"/ge
-      ' $GRADLE_FILE
-  
-  - name: Build Android Bundle
-    script: |
-      cd android
-      ./gradlew bundleRelease
-  
-  - name: Deploy to Google Play
-    script: |
-      # Check if Google Play credentials are available
-      if [ -n "$GOOGLE_PLAY_CREDENTIALS" ]; then
-        # Create fastlane directory if it doesn't exist
-        mkdir -p fastlane
-        
-        # Decode and save Google Play credentials
-        echo "$GOOGLE_PLAY_CREDENTIALS" | base64 --decode > fastlane/google-play-credentials.json
-        
-        # Deploy to Google Play
-        fastlane supply \
-          --aab $(find android -name "*.aab") \
-          --json_key fastlane/google-play-credentials.json \
-          --track production
-      else
-        echo "Google Play credentials not configured. Skipping deployment."
-      fi
+      - name: Prebuild Android
+        script: |
+          npx expo prebuild -p android --clean
+      
+      - name: Create Keystore
+        script: |
+          keytool -genkeypair -v \
+            -keystore codemagic.keystore \
+            -alias upload \
+            -keyalg RSA \
+            -keysize 4096 \
+            -validity 10000 \
+            -storepass "$CM_KEYSTORE_PASSWORD" \
+            -keypass "$CM_KEY_PASSWORD" \
+            -dname "CN=Tap Dash,OU=Mobile Development,O=Your Organization,L=Your City,S=Your State,C=US"
+      
+      - name: Configure Gradle Signing
+        script: |
+          GRADLE_FILE="android/app/build.gradle"
+          
+          perl -0777 -i -pe '
+            s/(buildTypes \{)/
+            "signingConfigs {\n        release {\n            storeFile file(\"..\/..\/codemagic.keystore\")\n            storePassword System.getenv(\"CM_KEYSTORE_PASSWORD\")\n            keyAlias \"upload\"\n            keyPassword System.getenv(\"CM_KEY_PASSWORD\")\n        }\n    }\n\n    $1"/ge;
+            
+            s/(release \{[^\}]+?)(\n\s+})/
+            "$1\n            signingConfig signingConfigs.release$2"/ge;
+            
+            s/(debug \{[^\}]+?)(\n\s+})/
+            "$1\n            signingConfig signingConfigs.release$2"/ge
+          ' $GRADLE_FILE
+      
+      - name: Build Android Bundle
+        script: |
+          cd android
+          ./gradlew bundleRelease
+      
+      - name: Deploy to Google Play
+        script: |
+          if [ -n "$GOOGLE_PLAY_CREDENTIALS" ]; then
+            mkdir -p fastlane
+            echo "$GOOGLE_PLAY_CREDENTIALS" | base64 --decode > fastlane/google-play-credentials.json
+            fastlane supply \
+              --aab $(find android -name "*.aab") \
+              --json_key fastlane/google-play-credentials.json \
+              --track production
+          else
+            echo "Google Play credentials not configured. Skipping deployment."
+          fi
 
-artifacts:
-  - android/app/build/outputs/**/*.aab
-  - android/app/build/outputs/**/*.apk
-  - codemagic.keystore
+    artifacts:
+      - android/app/build/outputs/**/*.aab
+      - android/app/build/outputs/**/*.apk
+      - codemagic.keystore
 
-publishing:
-  email:
-    recipients:
-      - karem.kamel@gmail.com
+    publishing:
+      email:
+        recipients:
+          - karem.kamel@gmail.com
