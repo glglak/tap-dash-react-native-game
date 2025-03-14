@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, TouchableWithoutFeedback, Dimensions, StatusBar } from 'react-native';
 import { GameEngine } from 'react-native-game-engine';
 
@@ -21,15 +21,21 @@ const GAME_SPEED = 5;
 
 // Physics system
 const Physics = (entities, { touches, dispatch, time }) => {
+  if (!entities || !entities.character || !entities.character.position) {
+    return entities || {};
+  }
+
   const character = entities.character;
   
   // Handle jump
-  touches.filter(t => t.type === 'press').forEach(() => {
-    if (character.position.y >= SCREEN_HEIGHT - FLOOR_HEIGHT - CHARACTER_SIZE.height) {
-      character.velocity.y = JUMP_FORCE;
-      character.jumping = true;
-    }
-  });
+  if (touches && Array.isArray(touches)) {
+    touches.filter(t => t && t.type === 'press').forEach(() => {
+      if (character.position.y >= SCREEN_HEIGHT - FLOOR_HEIGHT - CHARACTER_SIZE.height) {
+        character.velocity.y = JUMP_FORCE;
+        character.jumping = true;
+      }
+    });
+  }
   
   // Apply gravity to character
   character.velocity.y += GRAVITY;
@@ -45,28 +51,34 @@ const Physics = (entities, { touches, dispatch, time }) => {
   }
   
   // Move obstacles
-  Object.keys(entities).forEach(key => {
-    if (key.includes('obstacle')) {
-      entities[key].position.x -= GAME_SPEED;
-      
-      // Check if obstacle has gone off screen
-      if (entities[key].position.x < -OBSTACLE_WIDTH) {
-        delete entities[key];
-        dispatch({ type: 'score' });
+  if (entities) {
+    Object.keys(entities).forEach(key => {
+      if (key.includes('obstacle') && entities[key] && entities[key].position) {
+        entities[key].position.x -= GAME_SPEED;
+        
+        // Check if obstacle has gone off screen
+        if (entities[key].position.x < -OBSTACLE_WIDTH) {
+          delete entities[key];
+          if (dispatch) dispatch({ type: 'score' });
+        }
+        
+        // Check for collision with character
+        if (checkCollision(character, entities[key])) {
+          if (dispatch) dispatch({ type: 'game-over' });
+        }
       }
-      
-      // Check for collision with character
-      if (checkCollision(character, entities[key])) {
-        dispatch({ type: 'game-over' });
-      }
-    }
-  });
+    });
+  }
   
   return entities;
 };
 
 // Obstacle generator system
 const ObstacleGenerator = (entities, { time, dispatch }) => {
+  if (!entities || !time || !time.current) {
+    return entities || {};
+  }
+  
   // Generate new obstacle every ~2 seconds
   if (time.current % 120 === 0) {
     const obstacleHeight = Math.random() > 0.7 ? 90 : 40; // Two types of obstacles
@@ -90,7 +102,10 @@ const ObstacleGenerator = (entities, { time, dispatch }) => {
 
 // Collision detection helper
 const checkCollision = (character, obstacle) => {
-  if (!obstacle) return false;
+  if (!obstacle || !obstacle.position || !obstacle.size || 
+      !character || !character.position || !character.size) {
+    return false;
+  }
   
   const characterX = character.position.x - character.size.width / 2;
   const characterY = character.position.y - character.size.height / 2;
@@ -133,6 +148,9 @@ export default function App() {
         position: { x: SCREEN_WIDTH / 2, y: SCREEN_HEIGHT - FLOOR_HEIGHT / 2 },
         size: { width: SCREEN_WIDTH, height: FLOOR_HEIGHT },
         renderer: (props) => {
+          if (!props || !props.position || !props.size) {
+            return null;
+          }
           const { position, size } = props;
           return (
             <View style={{
@@ -170,6 +188,8 @@ export default function App() {
   
   // Handle game events
   const onEvent = (e) => {
+    if (!e) return;
+    
     if (e.type === 'game-over') {
       setRunning(false);
       setGameOver(true);
@@ -177,6 +197,17 @@ export default function App() {
       setScore(prevScore => prevScore + 1);
     }
   };
+  
+  // Start game with entities
+  useEffect(() => {
+    if (gameEngine) {
+      if (!running) {
+        gameEngine.stop();
+      } else {
+        gameEngine.start();
+      }
+    }
+  }, [running, gameEngine]);
   
   return (
     <TouchableWithoutFeedback onPress={handleTap}>
