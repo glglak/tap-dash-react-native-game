@@ -25,6 +25,20 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-screen-orientation",
+        {
+          "initialOrientation": "PORTRAIT"
+        }
+      ]
+    ],
+    "developer": {
+      "tool": "expo-cli"
+    },
+    "extra": {
+      "disableKeepAwake": true
     }
   }
 }
