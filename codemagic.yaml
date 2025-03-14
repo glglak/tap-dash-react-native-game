@@ -7,8 +7,6 @@ workflows:
       node: 16.14.2
       npm: 8.5.0
       java: 11
-      vars:
-        GPLAY_CREDENTIALS: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
     cache:
       cache_paths:
         - ~/.npm
@@ -49,16 +47,11 @@ workflows:
       - name: Build Android release
         script: |
           cd android
-          # Build both APK and AAB formats
+          # Build APK only
           ./gradlew assembleRelease
-          ./gradlew bundleRelease
     artifacts:
-      - android/app/build/outputs/**/*.aab
       - android/app/build/outputs/**/*.apk
     publishing:
       email:
         recipients:
           - karem.kamel@gmail.com
-      google_play:
-        credentials: $GPLAY_CREDENTIALS
-        track: internal
