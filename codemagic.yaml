@@ -1,69 +1,98 @@
-workflows:
-  react-native-android:
-    name: Tap Dash Android
-    max_build_duration: 30
-    instance_type: mac_mini_m1
-    environment:
-      node: 16.14.2
-      npm: 8.5.0
-      java: 11
-    cache:
-      cache_paths:
-        - ~/.npm
-        - ~/.gradle/caches
-        - ~/.gradle/wrapper
-    triggering:
-      events:
-        - push
-      branch_patterns:
-        - pattern: main
-          include: true
-    scripts:
-      - name: Install dependencies
-        script: |
-          npm ci
-      - name: Setup Expo and EAS
-        script: |
-          npm install -g expo-cli
-          npm install -g eas-cli
-      - name: Check package.json for Android app ID
-        script: |
-          echo "Updating Android app ID in app.json"
-          jq '.expo.android.package = "com.glglak.tapdash"' app.json > app.json.new
-          mv app.json.new app.json
-          jq '.expo.android.versionCode = 1' app.json > app.json.new
-          mv app.json.new app.json
-      - name: Prebuild for Android
-        script: |
-          npx expo prebuild -p android --no-install
-      - name: Create keystore and signing config
-        script: |
-          echo "Creating keystore for signing"
-          keytool -genkey -v -keystore codemagic.keystore -alias upload -keyalg RSA -keysize 2048 -validity 10000 -storepass $CM_KEYSTORE_PASSWORD -keypass $CM_KEY_PASSWORD -dname "CN=Tap Dash,O=Tap Dash,C=US"
-          echo "Creating signing config in build.gradle"
-          
-          # Create signing config in app/build.gradle
-          GRADLE_FILE="android/app/build.gradle"
-          
-          # Insert signing config before buildTypes block
-          perl -0777 -i -pe 's/(buildTypes \{)/"signingConfigs {\n        release {\n            storeFile file(\"..\/..\/codemagic.keystore\")\n            storePassword \"$ENV{CM_KEYSTORE_PASSWORD}\"\n            keyAlias \"upload\"\n            keyPassword \"$ENV{CM_KEY_PASSWORD}\"\n        }\n    }\n\n    $1"/g' $GRADLE_FILE
-          
-          # Update debug buildType to use release signing
-          perl -0777 -i -pe 's/(debug \{[^\}]+?)(\n\s+})/$1\n            signingConfig signingConfigs.release$2/g' $GRADLE_FILE
-          
-          # Update release buildType to use release signing
-          perl -0777 -i -pe 's/(release \{[^\}]+?)(\n\s+})/$1\n            signingConfig signingConfigs.release$2/g' $GRADLE_FILE
-          
-          cat $GRADLE_FILE
-      - name: Build Android App Bundle for Play Store
-        script: |
-          cd android
-          ./gradlew bundleRelease
-    artifacts:
-      - android/app/build/outputs/**/*.aab
-      - android/app/build/outputs/**/*.apk
-      - codemagic.keystore
-    publishing:
-      email:
-        recipients:
-          - karem.kamel@gmail.com
+cache:
+  cache_paths:
+    - ~/.npm
+    - ~/.gradle/caches
+    - ~/.gradle/wrapper
+    - node_modules
+
+triggering:
+  events:
+    - push
+  branch_patterns:
+    - pattern: main
+      include: true
+    - pattern: release/*
+      include: true
+
+scripts:
+  - name: Install dependencies
+    script: |
+      npm ci
+      npm install -g expo-cli eas-cli
+  
+  - name: Update App Configuration
+    script: |
+      # Use jq for safer JSON manipulation
+      jq --arg package "$BUNDLE_ID" '.expo.android.package = $package' app.json > app.json.tmp
+      mv app.json.tmp app.json
+      
+      jq --arg version_code "$VERSION_CODE" '.expo.android.versionCode = ($version_code | tonumber)' app.json > app.json.tmp
+      mv app.json.tmp app.json
+  
+  - name: Prebuild Android
+    script: |
+      npx expo prebuild -p android --clean
+  
+  - name: Create Keystore
+    script: |
+      # Generate keystore with more secure parameters
+      keytool -genkeypair -v \
+        -keystore codemagic.keystore \
+        -alias upload \
+        -keyalg RSA \
+        -keysize 4096 \
+        -validity 10000 \
+        -storepass "$CM_KEYSTORE_PASSWORD" \
+        -keypass "$CM_KEY_PASSWORD" \
+        -dname "CN=Tap Dash,OU=Mobile Development,O=Your Organization,L=Your City,S=Your State,C=US"
+  
+  - name: Configure Gradle Signing
+    script: |
+      GRADLE_FILE="android/app/build.gradle"
+      
+      # Advanced Gradle signing configuration
+      perl -0777 -i -pe '
+        s/(buildTypes \{)/
+        "signingConfigs {\n        release {\n            storeFile file(\"..\/..\/codemagic.keystore\")\n            storePassword System.getenv(\"CM_KEYSTORE_PASSWORD\")\n            keyAlias \"upload\"\n            keyPassword System.getenv(\"CM_KEY_PASSWORD\")\n        }\n    }\n\n    $1"/ge;
+        
+        s/(release \{[^\}]+?)(\n\s+})/
+        "$1\n            signingConfig signingConfigs.release$2"/ge;
+        
+        s/(debug \{[^\}]+?)(\n\s+})/
+        "$1\n            signingConfig signingConfigs.release$2"/ge
+      ' $GRADLE_FILE
+  
+  - name: Build Android Bundle
+    script: |
+      cd android
+      ./gradlew bundleRelease
+  
+  - name: Deploy to Google Play (Optional)
+    script: |
+      # Ensure you've set up Google Play credentials in Codemagic
+      if [ -n "$GOOGLE_PLAY_CREDENTIALS" ]; then
+        echo "$GOOGLE_PLAY_CREDENTIALS" | base64 --decode > fastlane/google-play-credentials.json
+        fastlane supply \
+          --aab $(find android -name "*.aab") \
+          --json_key fastlane/google-play-credentials.json \
+          --track production
+      else
+        echo "Google Play credentials not configured. Skipping deployment."
+      fi
+
+artifacts:
+  - android/app/build/outputs/**/*.aab
+  - android/app/build/outputs/**/*.apk
+  - codemagic.keystore
+
+publishing:
+  email:
+    recipients:
+      - karem.kamel@gmail.com
+  
+  # Optional: Slack or other notifications
+  slack:
+    channel: '#mobile-builds'
+    notify_on_build_start: true
+    notify_on_build_success: true
+    notify_on_build_failure: true
