@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, View, Text, TouchableWithoutFeedback, Dimensions, StatusBar, Vibration } from 'react-native';
 import { GameEngine } from 'react-native-game-engine';
 import { Audio } from 'expo-av';
@@ -295,6 +295,8 @@ function GameApp() {
   const [gameOver, setGameOver] = useState(false);
   const [soundsLoaded, setSoundsLoaded] = useState(false);
   const [debugInfo, setDebugInfo] = useState("");
+  const [entities, setEntities] = useState(null);
+  const initializeEntitiesOnce = useRef(false);
   
   // Use GameContext
   const { 
@@ -332,13 +334,6 @@ function GameApp() {
   const setupEntities = () => {
     console.log('Setting up entities with character size:', CHARACTER_SIZE.width, CHARACTER_SIZE.height);
     
-    // IMPORTANT: Create a character directly in the view for testing
-    setTimeout(() => {
-      if (gameEngine) {
-        setDebugInfo(`Character at X: ${SCREEN_WIDTH * 0.2}, Y: ${SCREEN_HEIGHT - FLOOR_HEIGHT - CHARACTER_SIZE.height/2}`);
-      }
-    }, 1000);
-    
     return {
       world: {
         width: SCREEN_WIDTH,
@@ -373,6 +368,14 @@ function GameApp() {
       }
     };
   };
+
+  // Initialize entities once
+  useEffect(() => {
+    if (!initializeEntitiesOnce.current) {
+      setEntities(setupEntities());
+      initializeEntitiesOnce.current = true;
+    }
+  }, []);
   
   // Reset game state for new game
   const resetGame = () => {
@@ -453,7 +456,7 @@ function GameApp() {
   };
   
   // Show loading screen if sounds aren't loaded
-  if (!soundsLoaded) {
+  if (!soundsLoaded || !entities) {
     return (
       <View style={styles.container}>
         <Text style={styles.loadingText}>Loading game...</Text>
@@ -466,14 +469,11 @@ function GameApp() {
       <View style={styles.container}>
         <StatusBar hidden={true} />
         
-        {/* Add a fixed reference character for testing */}
-        <View style={styles.testCharacter}/>
-        
         <GameEngine
           ref={(ref) => { setGameEngine(ref) }}
           style={styles.gameContainer}
-          systems={[GameSystem]} // Single combined system for better performance
-          entities={setupEntities()}
+          systems={[GameSystem]} 
+          entities={entities}
           running={running}
           onEvent={onEvent}
         />
@@ -564,16 +564,6 @@ const styles = StyleSheet.create({
   debugText: {
     color: 'white',
     fontSize: 10,
-  },
-  // Test character to see if it appears
-  testCharacter: {
-    position: 'absolute',
-    top: 200,
-    left: 200,
-    width: 30,
-    height: 30,
-    backgroundColor: 'red',
-    zIndex: 9999,
   },
   titleText: {
     fontSize: 48,
