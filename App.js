@@ -6,12 +6,10 @@ import { Audio } from 'expo-av';
 // Import GameContext
 import { GameProvider, useGame } from './src/contexts/GameContext';
 
-// Import game components
+// Import game components - remove Coin and PowerUp for now until we create them
 import Character from './components/Character';
 import Obstacle from './components/Obstacle';
 import Background from './components/Background';
-import Coin from './components/Coin';
-import PowerUp from './components/PowerUp';
 
 // Get screen dimensions for proper positioning
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -28,23 +26,6 @@ const MAX_GAME_SPEED = 15; // Increased max speed
 const SPEED_INCREASE_RATE = 0.2; // Increased speed increase rate
 const MIN_OBSTACLE_SPACING = 300;
 const OBSTACLE_SPACING_VARIATION = 150;
-const COIN_SIZE = 30;
-const COIN_VALUE = 5;
-const POWERUP_SIZE = 40;
-const POWERUP_DURATION = 5000; // 5 seconds of invincibility
-
-// Entity types
-const ENTITY_TYPES = {
-  OBSTACLE: 'obstacle',
-  COIN: 'coin',
-  POWERUP: 'powerup'
-};
-
-// Obstacle types
-const OBSTACLE_TYPES = {
-  GROUND: 'ground',
-  AIR: 'air'
-};
 
 // Background color themes
 const BACKGROUND_THEMES = [
@@ -55,14 +36,18 @@ const BACKGROUND_THEMES = [
   { sky: '#FFD700', ground: '#CD853F' }, // Desert theme
 ];
 
+// Obstacle types
+const OBSTACLE_TYPES = {
+  GROUND: 'ground',
+  AIR: 'air'
+};
+
 // Sound objects
 let jumpSound = null;
 let scoreSound = null;
 let gameOverSound = null;
 let backgroundMusic = null;
 let milestone10Sound = null;
-let coinSound = null;
-let powerupSound = null;
 
 // Define game systems
 // Physics System: Handles character movement, gravity, and jumping
@@ -124,21 +109,11 @@ const Physics = (entities, { touches, time }) => {
     }
   }
   
-  // Handle invincibility timer
-  if (character.isInvincible) {
-    if (time.current - character.invincibilityStartTime > POWERUP_DURATION) {
-      character.isInvincible = false;
-      if (entities.dispatch) {
-        entities.dispatch({ type: 'invincibility-end' });
-      }
-    }
-  }
-  
   return entities;
 };
 
-// Obstacle Generator: Creates and moves obstacles, coins and power-ups
-const EntityGenerator = (entities, { time }) => {
+// Obstacle Generator: Creates and moves obstacles
+const ObstacleGenerator = (entities, { time }) => {
   if (!entities.world || !entities.character) return entities;
   
   const world = entities.world;
@@ -148,70 +123,36 @@ const EntityGenerator = (entities, { time }) => {
   // Game speed increases with score - faster obstacles
   const gameSpeed = Math.min(INITIAL_GAME_SPEED + (score * SPEED_INCREASE_RATE), MAX_GAME_SPEED);
   
-  // Get all moving entities (obstacles, coins, power-ups)
-  const obstacles = Object.keys(entities).filter(key => key.includes(ENTITY_TYPES.OBSTACLE));
-  const coins = Object.keys(entities).filter(key => key.includes(ENTITY_TYPES.COIN));
-  const powerups = Object.keys(entities).filter(key => key.includes(ENTITY_TYPES.POWERUP));
-  const allEntities = [...obstacles, ...coins, ...powerups];
+  // Get all obstacles
+  const obstacles = Object.keys(entities).filter(key => key.includes('obstacle'));
   
-  // Move all entities
-  allEntities.forEach(entityKey => {
-    const entity = entities[entityKey];
-    if (entity) {
-      // Move entity to the left
-      entity.position.x -= gameSpeed;
+  // Move all obstacles
+  obstacles.forEach(obstacleKey => {
+    const obstacle = entities[obstacleKey];
+    if (obstacle) {
+      // Move obstacle to the left
+      obstacle.position.x -= gameSpeed;
       
-      // If entity is off-screen, remove it
-      if (entity.position.x < -entity.size.width) {
-        delete entities[entityKey];
+      // If obstacle is off-screen, remove it
+      if (obstacle.position.x < -obstacle.size.width) {
+        delete entities[obstacleKey];
         return;
       }
       
       // Check for collision with character
-      if (checkCollision(character, entity)) {
-        // Handle different entity types
-        if (entityKey.includes(ENTITY_TYPES.OBSTACLE)) {
-          if (!entity.hit && !character.isInvincible) {
-            entity.hit = true;
-            // Game over only if not invincible
-            if (entities.dispatch) {
-              entities.dispatch({ type: 'game-over' });
-            }
-          }
-        } else if (entityKey.includes(ENTITY_TYPES.COIN)) {
-          if (!entity.collected) {
-            entity.collected = true;
-            delete entities[entityKey];
-            
-            // Add coin value to score
-            entities.score = score + COIN_VALUE;
-            entities.coinsCollected = (entities.coinsCollected || 0) + 1;
-            
-            // Dispatch coin collection event
-            if (entities.dispatch) {
-              entities.dispatch({ type: 'coin-collected' });
-            }
-          }
-        } else if (entityKey.includes(ENTITY_TYPES.POWERUP)) {
-          if (!entity.collected) {
-            entity.collected = true;
-            delete entities[entityKey];
-            
-            // Activate invincibility
-            character.isInvincible = true;
-            character.invincibilityStartTime = time.current;
-            
-            // Dispatch power-up collection event
-            if (entities.dispatch) {
-              entities.dispatch({ type: 'powerup-collected' });
-            }
+      if (checkCollision(character, obstacle)) {
+        if (!obstacle.hit) {
+          obstacle.hit = true;
+          // Game over
+          if (entities.dispatch) {
+            entities.dispatch({ type: 'game-over' });
           }
         }
       }
       
       // Add score when obstacle passes
-      if (entityKey.includes(ENTITY_TYPES.OBSTACLE) && !entity.passed && entity.position.x < character.position.x - character.size.width/2) {
-        entity.passed = true;
+      if (!obstacle.passed && obstacle.position.x < character.position.x - character.size.width/2) {
+        obstacle.passed = true;
         entities.score = score + 1;
         
         // Dispatch score event
@@ -222,94 +163,54 @@ const EntityGenerator = (entities, { time }) => {
     }
   });
   
-  // Find the rightmost entity to maintain spacing
+  // Find the rightmost obstacle to maintain spacing
   let rightmostX = 0;
-  allEntities.forEach(entityKey => {
-    const entity = entities[entityKey];
-    if (entity) {
-      rightmostX = Math.max(rightmostX, entity.position.x);
+  obstacles.forEach(obstacleKey => {
+    const obstacle = entities[obstacleKey];
+    if (obstacle) {
+      rightmostX = Math.max(rightmostX, obstacle.position.x);
     }
   });
   
-  // Generate new entity with proper spacing
-  const minimumSpawnX = allEntities.length === 0 ? 
+  // Generate new obstacle with proper spacing
+  const minimumSpawnX = obstacles.length === 0 ? 
     world.width + 100 : 
     rightmostX + MIN_OBSTACLE_SPACING + Math.random() * OBSTACLE_SPACING_VARIATION;
   
   // Only generate if it's time (based on spacing and speed)
   if (rightmostX < minimumSpawnX - MIN_OBSTACLE_SPACING) {
-    // Decide what to spawn: obstacle (70%), coin (25%), or power-up (5%)
-    const spawnRoll = Math.random();
+    // Spawn obstacle
+    const obstacleId = `obstacle-${Date.now()}`;
     
-    if (spawnRoll < 0.70) {
-      // Spawn obstacle
-      const obstacleId = `${ENTITY_TYPES.OBSTACLE}-${Date.now()}`;
-      
-      // Determine obstacle type: ground or air
-      const obstacleType = Math.random() < 0.3 ? OBSTACLE_TYPES.AIR : OBSTACLE_TYPES.GROUND;
-      
-      // Determine obstacle height and position
-      let obstacleHeight, obstacleY;
-      
-      if (obstacleType === OBSTACLE_TYPES.GROUND) {
-        obstacleHeight = 50;
-        obstacleY = SCREEN_HEIGHT - FLOOR_HEIGHT - obstacleHeight/2;
-      } else {
-        obstacleHeight = 40;
-        obstacleY = character.size.height + obstacleHeight/2 + 20;
-      }
-      
-      // Add new obstacle
-      entities[obstacleId] = {
-        position: { 
-          x: minimumSpawnX,
-          y: obstacleY
-        },
-        size: { width: OBSTACLE_WIDTH, height: obstacleHeight },
-        type: obstacleType,
-        hit: false,
-        passed: false,
-        renderer: Obstacle
-      };
-    } else if (spawnRoll < 0.95) {
-      // Spawn coin
-      const coinId = `${ENTITY_TYPES.COIN}-${Date.now()}`;
-      
-      // Determine coin position (mid-air)
-      const coinY = SCREEN_HEIGHT - FLOOR_HEIGHT - 100 - Math.random() * 100;
-      
-      // Add new coin
-      entities[coinId] = {
-        position: {
-          x: minimumSpawnX,
-          y: coinY
-        },
-        size: { width: COIN_SIZE, height: COIN_SIZE },
-        collected: false,
-        renderer: Coin
-      };
+    // Determine obstacle type: ground or air
+    const obstacleType = Math.random() < 0.3 ? OBSTACLE_TYPES.AIR : OBSTACLE_TYPES.GROUND;
+    
+    // Determine obstacle height and position
+    let obstacleHeight, obstacleY;
+    
+    if (obstacleType === OBSTACLE_TYPES.GROUND) {
+      obstacleHeight = 50;
+      obstacleY = SCREEN_HEIGHT - FLOOR_HEIGHT - obstacleHeight/2;
     } else {
-      // Spawn power-up (invincibility)
-      const powerupId = `${ENTITY_TYPES.POWERUP}-${Date.now()}`;
-      
-      // Determine power-up position (mid-air)
-      const powerupY = SCREEN_HEIGHT - FLOOR_HEIGHT - 150;
-      
-      // Add new power-up
-      entities[powerupId] = {
-        position: {
-          x: minimumSpawnX,
-          y: powerupY
-        },
-        size: { width: POWERUP_SIZE, height: POWERUP_SIZE },
-        collected: false,
-        type: 'invincibility',
-        renderer: PowerUp
-      };
+      obstacleHeight = 40;
+      obstacleY = character.size.height + obstacleHeight/2 + 20;
     }
     
+    // Add new obstacle
+    entities[obstacleId] = {
+      position: { 
+        x: minimumSpawnX,
+        y: obstacleY
+      },
+      size: { width: OBSTACLE_WIDTH, height: obstacleHeight },
+      type: obstacleType,
+      hit: false,
+      passed: false,
+      renderer: Obstacle
+    };
+    
     // Update last entity spawn time
-    world.lastEntitySpawnTime = time.current;
+    world.lastObstacleTime = time.current;
   }
   
   return entities;
@@ -405,27 +306,6 @@ const loadSounds = async () => {
       require('./assets/sounds/milestone5.mp3')
     );
     milestone10Sound = milestone;
-    
-    // Try to load coin and powerup sounds (use existing sounds if files don't exist)
-    try {
-      const { sound: coin } = await Audio.Sound.createAsync(
-        require('./assets/sounds/coin.mp3')
-      );
-      coinSound = coin;
-    } catch (e) {
-      // Fallback to score sound
-      coinSound = scoreSound;
-    }
-    
-    try {
-      const { sound: powerup } = await Audio.Sound.createAsync(
-        require('./assets/sounds/powerup.mp3')
-      );
-      powerupSound = powerup;
-    } catch (e) {
-      // Fallback to milestone sound
-      powerupSound = milestone10Sound;
-    }
   } catch (error) {
     console.log("Error loading sounds:", error);
   }
@@ -449,8 +329,6 @@ function GameApp() {
   const [score, setScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [soundsLoaded, setSoundsLoaded] = useState(false);
-  const [coinsCollected, setCoinsCollected] = useState(0);
-  const [isInvincible, setIsInvincible] = useState(false);
   
   // Use GameContext
   const { 
@@ -476,8 +354,6 @@ function GameApp() {
       if (scoreSound) scoreSound.unloadAsync();
       if (gameOverSound) gameOverSound.unloadAsync();
       if (milestone10Sound) milestone10Sound.unloadAsync();
-      if (coinSound) coinSound.unloadAsync();
-      if (powerupSound) powerupSound.unloadAsync();
     };
   }, []);
 
@@ -494,7 +370,7 @@ function GameApp() {
       world: {
         width: SCREEN_WIDTH,
         height: SCREEN_HEIGHT,
-        lastEntitySpawnTime: undefined,
+        lastObstacleTime: undefined,
         difficultyLevel: 1
       },
       character: {
@@ -504,8 +380,6 @@ function GameApp() {
         isJumping: false,
         doubleJumpAvailable: true,
         jumping: false,
-        isInvincible: false,
-        invincibilityStartTime: 0,
         renderer: Character
       },
       floor: {
@@ -516,7 +390,6 @@ function GameApp() {
         renderer: Background
       },
       score: 0,
-      coinsCollected: 0,
       dispatch: (action) => {
         if (gameEngine) {
           gameEngine.dispatch(action);
@@ -528,8 +401,6 @@ function GameApp() {
   // Reset game state for new game
   const resetGame = () => {
     setScore(0);
-    setCoinsCollected(0);
-    setIsInvincible(false);
     setGameOver(false);
     
     if (gameEngine) {
@@ -567,7 +438,6 @@ function GameApp() {
       console.log("Game over event");
       setRunning(false);
       setGameOver(true);
-      setIsInvincible(false);
       
       // Play game over sound
       playSound(gameOverSound);
@@ -599,38 +469,6 @@ function GameApp() {
     } else if (e.type === 'jump' || e.type === 'double-jump') {
       // Play jump sound
       playSound(jumpSound);
-    } else if (e.type === 'coin-collected') {
-      // Play coin sound
-      playSound(coinSound);
-      
-      // Update coins collected
-      const newCoinsCollected = coinsCollected + 1;
-      setCoinsCollected(newCoinsCollected);
-      
-      // Update score
-      const newScore = score + COIN_VALUE;
-      setScore(newScore);
-      
-      // Update game entities
-      if (gameEngine && gameEngine.entities) {
-        gameEngine.entities.score = newScore;
-        gameEngine.entities.coinsCollected = newCoinsCollected;
-      }
-    } else if (e.type === 'powerup-collected') {
-      // Play powerup sound
-      playSound(powerupSound);
-      
-      // Activate invincibility
-      setIsInvincible(true);
-      
-      // Add feedback for powerup
-      Vibration.vibrate([0, 100, 50, 100]);
-    } else if (e.type === 'invincibility-end') {
-      // End invincibility
-      setIsInvincible(false);
-      
-      // Feedback for end of invincibility
-      Vibration.vibrate(50);
     }
   };
   
@@ -650,7 +488,7 @@ function GameApp() {
         <GameEngine
           ref={(ref) => { setGameEngine(ref) }}
           style={styles.gameContainer}
-          systems={[Physics, EntityGenerator, BackgroundSystem, DifficultySystem]}
+          systems={[Physics, ObstacleGenerator, BackgroundSystem, DifficultySystem]}
           entities={setupEntities()}
           running={running}
           onEvent={onEvent}
@@ -663,8 +501,6 @@ function GameApp() {
             <View style={styles.instructionsContainer}>
               <Text style={styles.instructionText}>• Tap to jump over obstacles</Text>
               <Text style={styles.instructionText}>• Double tap for a second jump in the air</Text>
-              <Text style={styles.instructionText}>• Collect coins for bonus points</Text>
-              <Text style={styles.instructionText}>• Get the star power-up for invincibility</Text>
               <Text style={styles.instructionText}>• Every 10 points changes the background!</Text>
             </View>
             {highScore > 0 && (
@@ -677,7 +513,6 @@ function GameApp() {
           <View style={styles.overlay}>
             <Text style={styles.gameOverText}>Game Over</Text>
             <Text style={styles.scoreText}>Score: {score}</Text>
-            <Text style={styles.coinsText}>Coins Collected: {coinsCollected}</Text>
             {score >= highScore && score > 0 && (
               <Text style={styles.newHighScoreText}>New High Score!</Text>
             )}
@@ -689,9 +524,8 @@ function GameApp() {
         {running && (
           <View style={styles.scoreContainer}>
             <Text style={styles.scoreDisplay}>Score: {score}</Text>
-            <Text style={styles.coinDisplay}>Coins: {coins + coinsCollected}</Text>
+            <Text style={styles.coinDisplay}>Coins: {coins}</Text>
             <Text style={styles.levelDisplay}>Level: {Math.floor(score / 10) + 1}</Text>
-            {isInvincible && <Text style={styles.invincibleText}>INVINCIBLE!</Text>}
           </View>
         )}
       </View>
@@ -766,11 +600,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginBottom: 10,
   },
-  coinsText: {
-    fontSize: 28,
-    color: 'gold',
-    marginBottom: 20,
-  },
   newHighScoreText: {
     fontSize: 28,
     fontWeight: 'bold',
@@ -810,12 +639,6 @@ const styles = StyleSheet.create({
   levelDisplay: {
     fontSize: 18,
     color: '#00FFFF',
-    marginTop: 5
-  },
-  invincibleText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FF00FF',
     marginTop: 5
   },
   loadingText: {
