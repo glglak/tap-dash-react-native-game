@@ -1,12 +1,82 @@
-// Override for app.json with dynamic configuration
-const appJson = require('./app.json');
-
-module.exports = {
-  ...appJson,
-  // Add any dynamic configuration here
-  extra: {
-    ...appJson.expo.extra,
-    // Force enable Hermes for better performance
-    jsEngine: 'hermes',
-  },
+// app.config.js
+const config = {
+  expo: {
+    name: "Tap Dash",
+    slug: "dash-tap",
+    version: "1.0.0",
+    orientation: "portrait",
+    icon: "./assets/icon.png",
+    userInterfaceStyle: "light",
+    splash: {
+      image: "./assets/splash.png",
+      resizeMode: "contain",
+      backgroundColor: "#87CEEB"
+    },
+    updates: {
+      fallbackToCacheTimeout: 0,
+      enabled: true
+    },
+    assetBundlePatterns: [
+      "**/*"
+    ],
+    ios: {
+      supportsTablet: true,
+      bundleIdentifier: "com.glglak.tapdash",
+      buildNumber: "1.0.0",
+      infoPlist: {
+        "UIBackgroundModes": ["audio"],
+        "NSHapticFeedbackHapticsEnabled": true
+      }
+    },
+    android: {
+      adaptiveIcon: {
+        foregroundImage: "./assets/adaptive-icon.png",
+        backgroundColor: "#87CEEB"
+      },
+      package: "com.glglak.tapdash",
+      versionCode: 2,
+      permissions: ["VIBRATE"],
+      softwareKeyboardLayoutMode: "pan",
+      targetSdkVersion: 34,
+      compileSdkVersion: 34,
+      // Add this configuration to help with Gradle issues
+      config: {
+        gradle: {
+          // Configure Gradle for Android 14 compatibility
+          gradleVersion: "8.3",
+          javaVersion: "17"
+        }
+      }
+    },
+    web: {
+      favicon: "./assets/favicon.png"
+    },
+    developer: {
+      tool: "expo-cli"
+    },
+    extra: {
+      disableKeepAwake: true,
+      eas: {
+        projectId: "5a12596e-c046-49f1-9fb8-9dc316b151e0"
+      }
+    },
+    plugins: [
+      "expo-av",
+      "expo-updates"
+    ],
+    description: "A simple and addictive endless runner game where you tap to jump over obstacles.",
+    primaryColor: "#87CEEB",
+    notification: {
+      color: "#87CEEB",
+      icon: "./assets/notification-icon.png"
+    },
+    androidStatusBar: {
+      backgroundColor: "#87CEEB",
+      barStyle: "dark-content",
+      translucent: false
+    },
+    privacy: "public"
+  }
 };
+
+module.exports = config;
