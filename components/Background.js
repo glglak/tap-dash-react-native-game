@@ -4,7 +4,6 @@ import { View, Dimensions } from 'react-native';
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
-// Ultra-simple Background - just a block of color
 const Background = (props) => {
   const { position, size, theme } = props || {};
   
@@ -24,7 +23,8 @@ const Background = (props) => {
         left: 0, 
         width: SCREEN_WIDTH, 
         height: SCREEN_HEIGHT, 
-        backgroundColor: skyColor 
+        backgroundColor: skyColor,
+        zIndex: 1
       }} />
       
       {/* Ground */}
@@ -34,7 +34,8 @@ const Background = (props) => {
         left: 0, 
         width: SCREEN_WIDTH, 
         height: size.height, 
-        backgroundColor: groundColor 
+        backgroundColor: groundColor,
+        zIndex: 2
       }} />
     </>
   );
