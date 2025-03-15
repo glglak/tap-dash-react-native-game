@@ -1,13 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, TouchableWithoutFeedback, Dimensions, StatusBar, Vibration } from 'react-native';
 import { GameEngine } from 'react-native-game-engine';
 import { Audio } from 'expo-av';
 
 // Import GameContext
 import { GameProvider, useGame } from './src/contexts/GameContext';
-
-// Import game systems
-import { Physics, ObstacleGenerator, DifficultySystem, setupEntities, JUMP_FORCE } from './src/systems/GameSystems';
 
 // Import game components
 import Character from './components/Character';
@@ -20,6 +17,7 @@ const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 // Game constants
 const GRAVITY = 0.8;
+const JUMP_FORCE = -15;
 const SUPER_JUMP_FORCE = -20; // Force for long press jump
 const CHARACTER_SIZE = { width: 50, height: 50 };
 const FLOOR_HEIGHT = 50;
@@ -34,6 +32,137 @@ let scoreSound = null;
 let gameOverSound = null;
 let backgroundMusic = null;
 let milestone5Sound = null;
+
+// Define game systems
+// Physics System: Handles character movement, gravity, and jumping
+const Physics = (entities, { touches, time }) => {
+    const character = entities.character;
+    
+    // Update character Y position based on velocity
+    character.position.y += character.velocity.y;
+    
+    // Apply gravity to velocity
+    character.velocity.y += GRAVITY;
+    
+    // Check for floor collision
+    const floorY = SCREEN_HEIGHT - FLOOR_HEIGHT - character.size.height / 2;
+    if (character.position.y > floorY) {
+        character.position.y = floorY;
+        character.velocity.y = 0;
+        character.isJumping = false;
+        character.doubleJumpAvailable = true;
+    }
+    
+    // Set jumping state for animations
+    character.jumping = character.velocity.y < 0 || character.position.y < floorY;
+    
+    return entities;
+};
+
+// Obstacle Generator: Creates and moves obstacles
+const ObstacleGenerator = (entities, { time }) => {
+    const world = entities.world;
+    const character = entities.character;
+    const obstacles = Object.keys(entities).filter(key => key.includes('obstacle'));
+    
+    // Game speed increases with score
+    const gameSpeed = Math.min(INITIAL_GAME_SPEED + (entities.score || 0) * SPEED_INCREASE_RATE, MAX_GAME_SPEED);
+    
+    // Move existing obstacles
+    obstacles.forEach(obstacleKey => {
+        const obstacle = entities[obstacleKey];
+        
+        // Move obstacle to the left
+        obstacle.position.x -= gameSpeed;
+        
+        // If obstacle is off-screen, remove it
+        if (obstacle.position.x < -OBSTACLE_WIDTH) {
+            delete entities[obstacleKey];
+            
+            // Add score when obstacle passes successfully
+            if (!obstacle.passed && !obstacle.hit) {
+                obstacle.passed = true;
+                entities.score = (entities.score || 0) + 1;
+                
+                // Dispatch score event
+                if (entities.dispatch) {
+                    entities.dispatch({ type: 'score' });
+                }
+            }
+        }
+        
+        // Check for collision with character
+        if (!obstacle.hit && checkCollision(character, obstacle)) {
+            obstacle.hit = true;
+            
+            // Dispatch game over event
+            if (entities.dispatch) {
+                entities.dispatch({ type: 'game-over' });
+            }
+        }
+    });
+    
+    // Generate new obstacle based on time and randomness
+    if (world.lastObstacleTime === undefined || 
+        time.current - world.lastObstacleTime > (1500 + Math.random() * 1000) / gameSpeed) {
+        
+        // Create obstacle ID
+        const newObstacleId = `obstacle-${Date.now()}`;
+        
+        // Add new obstacle
+        entities[newObstacleId] = {
+            position: { 
+                x: world.width + OBSTACLE_WIDTH,
+                y: SCREEN_HEIGHT - FLOOR_HEIGHT - 25 // 25 is half obstacle height
+            },
+            size: { width: OBSTACLE_WIDTH, height: 50 },
+            hit: false,
+            passed: false,
+            renderer: Obstacle
+        };
+        
+        // Update last obstacle time
+        world.lastObstacleTime = time.current;
+    }
+    
+    return entities;
+};
+
+// Difficulty System: Adjusts game difficulty based on score
+const DifficultySystem = (entities, { time }) => {
+    // This could include:
+    // - Adjusting obstacle generation frequency
+    // - Adding different types of obstacles
+    // - Changing game speed beyond the basic formula
+    
+    return entities;
+};
+
+// Helper function to check collisions
+const checkCollision = (character, obstacle) => {
+    if (!character || !obstacle) return false;
+    
+    const characterLeft = character.position.x - character.size.width / 2;
+    const characterRight = character.position.x + character.size.width / 2;
+    const characterTop = character.position.y - character.size.height / 2;
+    const characterBottom = character.position.y + character.size.height / 2;
+    
+    const obstacleLeft = obstacle.position.x - obstacle.size.width / 2;
+    const obstacleRight = obstacle.position.x + obstacle.size.width / 2;
+    const obstacleTop = obstacle.position.y - obstacle.size.height / 2;
+    const obstacleBottom = obstacle.position.y + obstacle.size.height / 2;
+    
+    // Allow some collision forgiveness (70% of the full box) for better game feel
+    const forgiveX = character.size.width * 0.15;
+    const forgiveY = character.size.height * 0.15;
+    
+    return (
+        characterRight - forgiveX > obstacleLeft &&
+        characterLeft + forgiveX < obstacleRight &&
+        characterBottom - forgiveY > obstacleTop &&
+        characterTop + forgiveY < obstacleBottom
+    );
+};
 
 // Load sounds
 const loadSounds = async () => {
@@ -125,18 +254,34 @@ function GameApp() {
   }, [score]);
   
   // Setup game entities
-  const setupGameEntities = () => {
-    // Create initial entities with the setupEntities function from GameSystems
-    const entities = setupEntities(SCREEN_WIDTH, SCREEN_HEIGHT);
-    
-    // Add dispatch function to handle game events
-    entities.dispatch = dispatch => {
-      if (gameEngine) {
-        gameEngine.dispatch(dispatch);
+  const setupEntities = () => {
+    return {
+      world: {
+        width: SCREEN_WIDTH,
+        height: SCREEN_HEIGHT,
+        lastObstacleTime: undefined
+      },
+      character: {
+        position: { x: SCREEN_WIDTH * 0.2, y: SCREEN_HEIGHT - FLOOR_HEIGHT - 25 },
+        velocity: { x: 0, y: 0 },
+        size: { width: 50, height: 50 },
+        isJumping: false,
+        doubleJumpAvailable: true,
+        jumping: false,
+        renderer: Character
+      },
+      floor: {
+        position: { x: SCREEN_WIDTH / 2, y: SCREEN_HEIGHT - FLOOR_HEIGHT / 2 },
+        size: { width: SCREEN_WIDTH, height: FLOOR_HEIGHT },
+        renderer: Background
+      },
+      score: 0,
+      dispatch: (action) => {
+        if (gameEngine) {
+          gameEngine.dispatch(action);
+        }
       }
     };
-    
-    return entities;
   };
   
   // Reset game state for new game
@@ -145,7 +290,7 @@ function GameApp() {
     setGameOver(false);
     
     if (gameEngine) {
-      gameEngine.swap(setupGameEntities());
+      gameEngine.swap(setupEntities());
     }
     
     // Start the game
@@ -248,7 +393,7 @@ function GameApp() {
           ref={(ref) => { setGameEngine(ref) }}
           style={styles.gameContainer}
           systems={[Physics, ObstacleGenerator, DifficultySystem]}
-          entities={setupGameEntities()}
+          entities={setupEntities()}
           running={running}
           onEvent={onEvent}
         />
@@ -292,6 +437,7 @@ function GameApp() {
   );
 }
 
+// Main app component wrapped with GameProvider
 export default function App() {
   return (
     <GameProvider>
