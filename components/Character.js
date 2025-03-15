@@ -10,32 +10,53 @@ const Character = (props) => {
   
   // Character parts styling
   const characterStyles = StyleSheet.create({
+    // Main body - smaller and more streamlined for "dash" concept
     character: {
       position: 'absolute',
       left: position.x - size.width / 2,
       top: position.y - size.height / 2,
       width: size.width,
       height: size.height,
-      borderRadius: size.width / 4,
-      backgroundColor: '#FF5252',
+      borderRadius: size.width / 2, // Circular design for "dash"
+      backgroundColor: '#3498db', // Bright blue to represent speed/dash
       borderWidth: 2,
-      borderColor: '#700000',
+      borderColor: '#2980b9',
       zIndex: 999,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.3,
-      shadowRadius: 4,
-      elevation: 10,
       justifyContent: 'center',
       alignItems: 'center',
-      transform: [{ rotate: jumping ? '-10deg' : '0deg' }]
+      transform: [
+        { rotate: jumping ? '-15deg' : '0deg' }, // More dynamic leaning while jumping
+        { scaleX: jumping ? 1.1 : 1 } // Stretch horizontally during jump
+      ]
     },
-    eyes: {
+    // Motion streaks to represent "dash"
+    streak1: {
       position: 'absolute',
-      top: size.height * 0.25,
-      left: size.width * 0.55,
-      width: size.width * 0.22,
-      height: size.height * 0.22,
+      right: size.width * 0.9,
+      top: size.height * 0.3,
+      width: size.width * 0.4,
+      height: size.height * 0.1,
+      backgroundColor: jumping ? '#E3F2FD' : '#90CAF9',
+      borderRadius: 4,
+      opacity: jumping ? 0.8 : 0.5
+    },
+    streak2: {
+      position: 'absolute',
+      right: size.width * 0.8,
+      top: size.height * 0.5,
+      width: size.width * 0.3,
+      height: size.height * 0.1,
+      backgroundColor: jumping ? '#E3F2FD' : '#90CAF9',
+      borderRadius: 4,
+      opacity: jumping ? 0.8 : 0.5
+    },
+    // Face elements
+    eye: {
+      position: 'absolute',
+      top: size.height * 0.3,
+      left: size.width * 0.6,
+      width: size.width * 0.15,
+      height: size.height * 0.15,
       borderRadius: 50,
       backgroundColor: 'white',
       borderWidth: 1,
@@ -43,60 +64,54 @@ const Character = (props) => {
     },
     pupil: {
       position: 'absolute',
-      top: size.height * 0.30,
+      top: size.height * 0.33,
       left: size.width * 0.63,
-      width: size.width * 0.12,
-      height: size.height * 0.12,
+      width: size.width * 0.08,
+      height: size.height * 0.08,
       borderRadius: 50,
       backgroundColor: '#333',
     },
-    mouth: {
+    // Motion indicator - blur at the back
+    motionBlur: {
       position: 'absolute',
-      top: size.height * 0.55,
-      left: size.width * 0.53,
-      width: size.width * 0.25,
-      height: size.height * 0.12,
-      borderBottomLeftRadius: 50,
-      borderBottomRightRadius: 50,
-      backgroundColor: jumping ? '#FF0000' : '#990000',
-      borderWidth: 1,
-      borderColor: '#700000',
-      transform: [{ rotate: '10deg' }]
+      right: size.width * 1.1,
+      top: 0,
+      width: size.width * 0.6,
+      height: size.height,
+      borderRadius: size.width / 4,
+      backgroundColor: '#3498db',
+      opacity: 0.3,
+      zIndex: 998,
     },
-    leg1: {
+    // Highlight on top to give 3D look
+    highlight: {
       position: 'absolute',
-      left: size.width * 0.15,
-      bottom: -size.height * 0.05,
-      width: size.width * 0.18,
-      height: size.height * 0.3,
-      backgroundColor: '#FF5252',
-      borderRadius: 10,
-      borderWidth: 2,
-      borderColor: '#700000',
-      transform: [{ rotate: jumping ? '30deg' : '0deg' }]
-    },
-    leg2: {
-      position: 'absolute',
-      left: size.width * 0.55,
-      bottom: -size.height * 0.05,
-      width: size.width * 0.18,
-      height: size.height * 0.3,
-      backgroundColor: '#FF5252',
-      borderRadius: 10,
-      borderWidth: 2,
-      borderColor: '#700000',
-      transform: [{ rotate: jumping ? '-20deg' : '0deg' }]
+      top: size.height * 0.15,
+      left: size.width * 0.25,
+      width: size.width * 0.3,
+      height: size.height * 0.2,
+      borderRadius: 50,
+      backgroundColor: 'rgba(255, 255, 255, 0.4)',
+      transform: [{ rotate: '20deg' }]
     }
   });
   
   return (
-    <View style={characterStyles.character}>
-      <View style={characterStyles.leg1} />
-      <View style={characterStyles.leg2} />
-      <View style={characterStyles.eyes} />
-      <View style={characterStyles.pupil} />
-      <View style={characterStyles.mouth} />
-    </View>
+    <>
+      {/* Motion blur behind for fast movement effect */}
+      <View style={characterStyles.motionBlur} />
+      
+      {/* Main character body */}
+      <View style={characterStyles.character}>
+        <View style={characterStyles.highlight} />
+        <View style={characterStyles.eye} />
+        <View style={characterStyles.pupil} />
+      </View>
+      
+      {/* Motion streaks to visualize speed/dash */}
+      <View style={characterStyles.streak1} />
+      <View style={characterStyles.streak2} />
+    </>
   );
 };
 
