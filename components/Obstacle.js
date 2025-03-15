@@ -1,7 +1,6 @@
 import React from 'react';
 import { View } from 'react-native';
 
-// Ultra-simple Obstacle - just a green box
 const Obstacle = (props) => {
   const { position, size, hit } = props || {};
   
@@ -19,7 +18,8 @@ const Obstacle = (props) => {
         height: size.height,
         backgroundColor: hit ? '#FF0000' : '#00FF00',
         borderWidth: 2,
-        borderColor: '#000000'
+        borderColor: '#000000',
+        zIndex: 998
       }}
     />
   );
