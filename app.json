@@ -46,7 +46,7 @@
     "extra": {
       "disableKeepAwake": true,
       "eas": {
-        "projectId": "your-project-id-from-expo"
+        "projectId": "5a12596e-c046-49f1-9fb8-9dc316b151e0"
       }
     },
     "plugins": [
