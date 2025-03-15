@@ -35,7 +35,7 @@ let milestone5Sound = null;
 
 // Define game systems
 // Physics System: Handles character movement, gravity, and jumping
-const Physics = (entities, { touches, time }) => {
+const Physics = (entities, { touches, time, dispatch }) => {
     const character = entities.character;
     
     // Update character Y position based on velocity
@@ -55,6 +55,32 @@ const Physics = (entities, { touches, time }) => {
     
     // Set jumping state for animations
     character.jumping = character.velocity.y < 0 || character.position.y < floorY;
+    
+    // Handle touch events for jumping
+    let jump = false;
+    if (touches.filter(t => t.type === 'press').length > 0) {
+        jump = true;
+    }
+    
+    if (jump && !character.isJumping) {
+        // First jump
+        character.isJumping = true;
+        character.velocity.y = JUMP_FORCE;
+        
+        // Tell the game engine to play jump sound
+        if (entities.dispatch) {
+            entities.dispatch({ type: 'jump' });
+        }
+    } else if (jump && character.isJumping && character.doubleJumpAvailable) {
+        // Double jump
+        character.velocity.y = JUMP_FORCE * 1.2;
+        character.doubleJumpAvailable = false;
+        
+        // Tell the game engine to play jump sound with vibration
+        if (entities.dispatch) {
+            entities.dispatch({ type: 'double-jump' });
+        }
+    }
     
     return entities;
 };
@@ -303,7 +329,7 @@ function GameApp() {
     }
   };
   
-  // Handle tap for jump
+  // Handle tap for jump (only used for starting game or restarting after game over)
   const handleTap = () => {
     if (gameOver) {
       resetGame();
@@ -313,27 +339,6 @@ function GameApp() {
     if (!running) {
       resetGame();
       return;
-    }
-    
-    // If game is running, make the character jump
-    if (gameEngine && gameEngine.entities && gameEngine.entities.character) {
-      const character = gameEngine.entities.character;
-      
-      // Handle jumping logic
-      if (!character.isJumping) {
-        // First jump
-        character.isJumping = true;
-        character.velocity.y = JUMP_FORCE;
-        playSound(jumpSound);
-      } else if (character.doubleJumpAvailable) {
-        // Double jump
-        character.velocity.y = JUMP_FORCE * 1.2;
-        character.doubleJumpAvailable = false;
-        
-        // Extra haptic feedback for double jump
-        Vibration.vibrate(50);
-        playSound(jumpSound);
-      }
     }
   };
   
@@ -373,6 +378,13 @@ function GameApp() {
       if (gameEngine && gameEngine.entities) {
         gameEngine.entities.score = newScore;
       }
+    } else if (e.type === 'jump') {
+      // Play jump sound
+      playSound(jumpSound);
+    } else if (e.type === 'double-jump') {
+      // Play jump sound with vibration for double jump
+      playSound(jumpSound);
+      Vibration.vibrate(50);
     }
   };
   
