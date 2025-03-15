@@ -18,7 +18,6 @@ const SCREEN_HEIGHT = Dimensions.get('window').height;
 // Game constants
 const GRAVITY = 0.8;
 const JUMP_FORCE = -15;
-const SUPER_JUMP_FORCE = -20; // Force for long press jump
 const CHARACTER_SIZE = { width: 50, height: 50 };
 const FLOOR_HEIGHT = 50;
 const OBSTACLE_WIDTH = 30;
@@ -36,6 +35,12 @@ const BACKGROUND_THEMES = [
   { sky: '#7CFC00', ground: '#006400' }, // Alien planet theme
   { sky: '#FFD700', ground: '#CD853F' }, // Desert theme
 ];
+
+// Obstacle types
+const OBSTACLE_TYPES = {
+  GROUND: 'ground',
+  AIR: 'air'
+};
 
 // Sound objects
 let jumpSound = null;
@@ -64,6 +69,13 @@ const Physics = (entities, { touches, time, dispatch }) => {
         character.doubleJumpAvailable = true;
     }
     
+    // Check for ceiling collision
+    const ceilingY = character.size.height / 2;
+    if (character.position.y < ceilingY) {
+        character.position.y = ceilingY;
+        character.velocity.y = 0;
+    }
+    
     // Set jumping state for animations
     character.jumping = character.velocity.y < 0 || character.position.y < floorY;
     
@@ -74,22 +86,13 @@ const Physics = (entities, { touches, time, dispatch }) => {
     }
     
     if (jump && !character.isJumping) {
-        // First jump
+        // Jump
         character.isJumping = true;
         character.velocity.y = JUMP_FORCE;
         
         // Tell the game engine to play jump sound
         if (entities.dispatch) {
             entities.dispatch({ type: 'jump' });
-        }
-    } else if (jump && character.isJumping && character.doubleJumpAvailable) {
-        // Double jump
-        character.velocity.y = JUMP_FORCE * 1.2;
-        character.doubleJumpAvailable = false;
-        
-        // Tell the game engine to play jump sound with vibration
-        if (entities.dispatch) {
-            entities.dispatch({ type: 'double-jump' });
         }
     }
     
@@ -159,18 +162,35 @@ const ObstacleGenerator = (entities, { time }) => {
         // Create obstacle ID
         const newObstacleId = `obstacle-${Date.now()}`;
         
-        // Determine obstacle height variation (make it more challenging as score increases)
-        const baseHeight = 50;
-        const heightVariation = Math.min(30, (entities.score || 0) / 5 * 5); // Increase variation with score, max 30
-        const obstacleHeight = baseHeight + (Math.random() * heightVariation);
+        // Determine obstacle type: ground or air
+        // As score increases, increase likelihood of air obstacles
+        const score = entities.score || 0;
+        const airObstacleProbability = Math.min(0.5, score * 0.01); // Max 50% chance
+        const obstacleType = Math.random() < airObstacleProbability ? 
+            OBSTACLE_TYPES.AIR : OBSTACLE_TYPES.GROUND;
+        
+        // Determine obstacle dimensions based on type
+        let obstacleHeight, obstacleY;
+        
+        if (obstacleType === OBSTACLE_TYPES.GROUND) {
+            // Ground obstacle (jump over it)
+            obstacleHeight = 50 + Math.min(30, score * 0.5); // Higher with score increase
+            obstacleY = SCREEN_HEIGHT - FLOOR_HEIGHT - obstacleHeight/2;
+        } else {
+            // Air obstacle (duck under it)
+            obstacleHeight = 40 + Math.min(20, score * 0.3);
+            // Position it so character needs to duck
+            obstacleY = character.size.height + obstacleHeight/2 + 20;
+        }
         
         // Add new obstacle
         entities[newObstacleId] = {
             position: { 
                 x: minimumSpawnX,
-                y: SCREEN_HEIGHT - FLOOR_HEIGHT - obstacleHeight / 2
+                y: obstacleY
             },
             size: { width: OBSTACLE_WIDTH, height: obstacleHeight },
+            type: obstacleType,
             hit: false,
             passed: false,
             renderer: Obstacle
@@ -188,13 +208,13 @@ const BackgroundSystem = (entities, { time }) => {
     const currentScore = entities.score || 0;
     const backgroundThemeIndex = Math.floor(currentScore / 10) % BACKGROUND_THEMES.length;
     
-    // Only update if theme has changed
-    if (entities.floor.themeIndex !== backgroundThemeIndex) {
+    // Only update if theme has changed and we're at a multiple of 10
+    if (entities.floor.themeIndex !== backgroundThemeIndex && currentScore > 0 && currentScore % 10 === 0) {
         entities.floor.themeIndex = backgroundThemeIndex;
         entities.floor.theme = BACKGROUND_THEMES[backgroundThemeIndex];
         
         // Dispatch theme change event
-        if (entities.dispatch && backgroundThemeIndex > 0) { // Don't dispatch for initial theme
+        if (entities.dispatch) {
             entities.dispatch({ type: 'theme-change' });
         }
     }
@@ -416,8 +436,8 @@ function GameApp() {
       // Play normal score sound
       playSound(scoreSound);
       
-      // Check if we hit a multiple of 10 - play special milestone sound
-      if (newScore % 10 === 0) {
+      // Check if we hit exactly a multiple of 10 - play special milestone sound
+      if (newScore > 0 && newScore % 10 === 0) {
         // Play special milestone sound
         playSound(milestone10Sound);
         
@@ -432,13 +452,9 @@ function GameApp() {
     } else if (e.type === 'jump') {
       // Play jump sound
       playSound(jumpSound);
-    } else if (e.type === 'double-jump') {
-      // Play jump sound with vibration for double jump
-      playSound(jumpSound);
-      Vibration.vibrate(50);
     } else if (e.type === 'theme-change') {
-      // Visual or audio feedback for theme change
-      Vibration.vibrate(30);
+      // We already play milestone sound and vibration for score multiples of 10
+      // No need for additional feedback here
     }
   };
   
@@ -469,10 +485,10 @@ function GameApp() {
             <Text style={styles.titleText}>Tap Dash</Text>
             <Text style={styles.startText}>Tap to Start</Text>
             <View style={styles.instructionsContainer}>
-              <Text style={styles.instructionText}>• Tap to jump</Text>
-              <Text style={styles.instructionText}>• Double tap for double jump</Text>
+              <Text style={styles.instructionText}>• Tap to jump over ground obstacles</Text>
+              <Text style={styles.instructionText}>• Obstacles from the ground and air will appear</Text>
               <Text style={styles.instructionText}>• Every 10 points changes the background!</Text>
-              <Text style={styles.instructionText}>• Obstacles get trickier as you progress</Text>
+              <Text style={styles.instructionText}>• Game gets more challenging as you go</Text>
             </View>
             {highScore > 0 && (
               <Text style={styles.highScoreText}>High Score: {highScore}</Text>
