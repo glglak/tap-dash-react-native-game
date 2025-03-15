@@ -1,5 +1,18 @@
 {
   "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "android": {
+        "gradleCommand": ":app:assembleDebug",
+        "buildType": "apk",
+        "env": {
+          "ANDROID_COMPILE_SDK_VERSION": "34",
+          "ANDROID_TARGET_SDK_VERSION": "34",
+          "GRADLE_OPTS": "-Dorg.gradle.jvmargs='-Xmx2048m -XX:MaxMetaspaceSize=512m' -Dorg.gradle.configuration-cache=false"
+        }
+      }
+    },
     "preview": {
       "android": {
         "buildType": "apk",
@@ -36,5 +49,19 @@
   "cli": {
     "appVersionSource": "remote",
     "version": "^15.0.0"
+  },
+  "build-properties": {
+    "android": {
+      "batchSize": 1,
+      "additionalProperties": {
+        "org.gradle.daemon": false,
+        "org.gradle.parallel": false,
+        "org.gradle.jvmargs": "-Xmx4096m",
+        "org.gradle.configureondemand": false
+      }
+    },
+    "ios": {
+      "batchSize": 1
+    }
   }
 }
