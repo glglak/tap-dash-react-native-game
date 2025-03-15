@@ -108,9 +108,21 @@ export const GameProvider = ({ children }) => {
   };
 
   // Share Score
-  const shareScore = async () => {
+  const shareScore = async (scoreToShare = null) => {
     try {
-      const message = `I just scored ${highScore} points in Tap Dash! Can you beat my record? 🏆🎮`;
+      // Use provided score or fall back to high score
+      const finalScore = scoreToShare !== null ? scoreToShare : highScore;
+      
+      // Create share message
+      let message = `I just scored ${finalScore} points in Tap Dash! Can you beat my record? 🏆🎮`;
+      
+      // Add high score message if current score isn't the high score
+      if (scoreToShare !== null && scoreToShare < highScore) {
+        message += `\n(My high score is ${highScore} points!)`;
+      }
+      
+      // Add store link if available
+      // message += '\nGet it at: https://play.google.com/store/apps/details?id=com.glglak.tapdash';
       
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(message, {
