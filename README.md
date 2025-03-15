@@ -1,59 +1,66 @@
-# Tap Dash Game - React Native with Expo
+# Tap Dash React Native Game
 
-A mobile game with exciting gamification features that keep players engaged and motivated!
+A simple and addictive endless runner game where you tap to jump over obstacles.
 
-## 🎮 Game Overview
+## Fixed Issues
 
-Tap Dash is an endless runner game where a character automatically moves forward, and players tap to jump over obstacles. But now, it's packed with motivational features!
+Recent fixes have addressed:
+- Added missing `index.js` file to register the main component
+- Created missing game systems (Physics, ObstacleGenerator, DifficultySystem)
+- Implemented proper entity setup and initialization
+- Fixed "main has not been registered" error that was preventing the game from running
 
-## 🏆 Gamification Features
+## Game Features
 
-### 1. Achievements System
-- Unlock badges for milestones
-  - 🏁 First Run
-  - 🏆 Marathon Starter (100m)
-  - 🚀 Distance Master (500m)
-  - 🛡️ Perfect Run (No obstacles)
+- Simple tap controls
+- Double jump mechanics
+- Progressive difficulty
+- High score tracking
+- Sound effects and background music
+- Haptic feedback
 
-### 2. Progression Mechanics
-- Coin Collection System
-  - Earn coins based on your score
-  - Use coins to unlock character skins
+## How to Play
 
-### 3. Character Customization
-- Multiple character skins to unlock
-  - Default Runner (Free)
-  - Ninja Runner (500 coins)
-  - Astronaut Runner (1000 coins)
+- Tap to jump over obstacles
+- Hold for a higher jump
+- Double tap for a double jump
+- Every 5 points gives a special bonus!
 
-### 4. Persistent Progress
-- Save and load game progress
-- Track high scores locally
-- Maintain play streaks
+## Development Setup
 
-### 5. Social Sharing
-- Share your highest score with friends
-- Challenge others to beat your record
-
-## 🚀 Getting Started
-
-```bash
-# Install dependencies
+1. Install dependencies:
+```
 npm install
+```
 
-# Start the game
+2. Start the development server:
+```
 npx expo start
 ```
 
-## 📦 Dependencies
+3. Run on simulator or device:
+   - Press `i` for iOS simulator
+   - Press `a` for Android simulator
+   - Scan QR code with Expo Go app for physical device
+
+## Troubleshooting
+
+If you encounter the "Uncaught Error: main has not been registered" error:
+1. Make sure the Metro bundler is running
+2. Try restarting the development server with `npx expo start --clear`
+3. If the error persists, delete the node_modules folder and reinstall dependencies
+
+## Assets
+
+Place sound files in `assets/sounds/` directory:
+- background.mp3
+- jump.mp3
+- score.mp3
+- game-over.mp3
+- milestone5.mp3
+
+## Technologies Used
+
 - React Native
 - Expo
-- AsyncStorage
-- Expo Haptics
-- Expo Sharing
-
-## 🤝 Contributing
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## 📝 License
-[Your License Here]
+- React Native Game Engine
