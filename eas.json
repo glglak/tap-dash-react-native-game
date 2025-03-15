@@ -15,7 +15,7 @@
       "android": {
         "buildType": "app-bundle",
         "autoIncrement": true,
-        "image": "ubuntu-22.04-jdk-17-ndk-r25c",
+        "image": "ubuntu-22.04-jdk-17-ndk-r25b",
         "gradleCommand": ":app:bundleRelease",
         "env": {
           "ANDROID_COMPILE_SDK_VERSION": "34",
