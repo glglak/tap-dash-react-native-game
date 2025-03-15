@@ -31,6 +31,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "postinstall": "node ./gradle-plugin-patch.js"
+    "postinstall": "node ./gradle-plugin-patch.js",
+    "prepare-gradlew": "cd android && chmod +x ./gradlew"
   }
 }
