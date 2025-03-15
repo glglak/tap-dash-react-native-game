@@ -21,13 +21,13 @@ const JUMP_FORCE = -18; // Stronger jump
 const CHARACTER_SIZE = { width: 50, height: 50 };
 const FLOOR_HEIGHT = 50;
 const OBSTACLE_WIDTH = 30;
-const INITIAL_GAME_SPEED = 10; // Start with higher speed
-const MAX_GAME_SPEED = 20; // Much higher max speed
-const SPEED_INCREASE_RATE = 0.3; // Faster speed increase
-const MIN_OBSTACLE_SPACING = 200; // Shorter minimum spacing
+const INITIAL_GAME_SPEED = 12; // Even higher initial speed
+const MAX_GAME_SPEED = 25; // Higher max speed
+const SPEED_INCREASE_RATE = 0.4; // Faster speed increase
+const MIN_OBSTACLE_SPACING = 180; // Shorter minimum spacing
 const OBSTACLE_SPACING_VARIATION = 100; // Less variation for more frequent obstacles
 
-// Background color themes
+// Background color themes - simplified for performance
 const BACKGROUND_THEMES = [
   { sky: '#87CEEB', ground: '#8B4513' }, // Default - Sky blue with brown ground
   { sky: '#FF7F50', ground: '#654321' }, // Sunset theme
@@ -43,13 +43,16 @@ let gameOverSound = null;
 let backgroundMusic = null;
 let milestone10Sound = null;
 
-// Define game systems
-// Physics System: Handles character movement, gravity, and jumping
-const Physics = (entities, { touches, time }) => {
-  if (!entities.character) return entities;
+// Define game systems - OPTIMIZED FOR PERFORMANCE
+// GameSystem: Combined system that handles everything for better performance
+const GameSystem = (entities, { touches, time }) => {
+  if (!entities.character || !entities.world) return entities;
   
   const character = entities.character;
+  const world = entities.world;
+  const score = entities.score || 0;
   
+  // 1. PHYSICS HANDLING
   // Update character Y position based on velocity
   character.position.y += character.velocity.y;
   
@@ -75,6 +78,7 @@ const Physics = (entities, { touches, time }) => {
   // Set jumping state for animations
   character.jumping = character.velocity.y < 0 || character.position.y < floorY;
   
+  // 2. JUMP HANDLING
   // Handle touch events for jumping
   let jump = false;
   if (touches.filter(t => t.type === 'press').length > 0) {
@@ -103,17 +107,7 @@ const Physics = (entities, { touches, time }) => {
     }
   }
   
-  return entities;
-};
-
-// Obstacle Generator: Creates and moves obstacles
-const ObstacleGenerator = (entities, { time }) => {
-  if (!entities.world || !entities.character) return entities;
-  
-  const world = entities.world;
-  const character = entities.character;
-  const score = entities.score || 0;
-  
+  // 3. OBSTACLE HANDLING
   // Game speed increases with score - faster obstacles
   const gameSpeed = Math.min(INITIAL_GAME_SPEED + (score * SPEED_INCREASE_RATE), MAX_GAME_SPEED);
   
@@ -134,13 +128,16 @@ const ObstacleGenerator = (entities, { time }) => {
       }
       
       // Check for collision with character
-      if (checkCollision(character, obstacle)) {
-        if (!obstacle.hit) {
-          obstacle.hit = true;
-          // Game over
-          if (entities.dispatch) {
-            entities.dispatch({ type: 'game-over' });
-          }
+      if (!obstacle.hit && 
+          character.position.x + character.size.width/3 > obstacle.position.x - obstacle.size.width/2 &&
+          character.position.x - character.size.width/3 < obstacle.position.x + obstacle.size.width/2 &&
+          character.position.y + character.size.height/3 > obstacle.position.y - obstacle.size.height/2 &&
+          character.position.y - character.size.height/3 < obstacle.position.y + obstacle.size.height/2) {
+        
+        obstacle.hit = true;
+        // Game over
+        if (entities.dispatch) {
+          entities.dispatch({ type: 'game-over' });
         }
       }
       
@@ -157,6 +154,7 @@ const ObstacleGenerator = (entities, { time }) => {
     }
   });
   
+  // Generate new obstacle with proper spacing
   // Find the rightmost obstacle to maintain spacing
   let rightmostX = 0;
   obstacles.forEach(obstacleKey => {
@@ -172,15 +170,18 @@ const ObstacleGenerator = (entities, { time }) => {
     rightmostX + MIN_OBSTACLE_SPACING + Math.random() * OBSTACLE_SPACING_VARIATION;
   
   // Only generate if it's time (based on spacing and speed)
-  if (rightmostX < minimumSpawnX - MIN_OBSTACLE_SPACING) {
+  if ((world.lastObstacleTime === undefined || 
+       time.current - world.lastObstacleTime > 500) && // Force minimum time between obstacles
+      rightmostX < minimumSpawnX - MIN_OBSTACLE_SPACING) {
+    
     // Spawn obstacle
     const obstacleId = `obstacle-${Date.now()}`;
     
     // Determine obstacle height - vary based on score
     // Higher score = potentially taller obstacles, but never too tall to jump over
     const minHeight = 30; // Shortest obstacle
-    const maxHeight = Math.min(70, 30 + score); // Max height increases with score, caps at 70
-    const obstacleHeight = minHeight + Math.random() * (maxHeight - minHeight);
+    const maxHeight = Math.min(70, 30 + Math.floor(score/5) * 5); // Increase height every 5 points, cap at 70
+    const obstacleHeight = minHeight + Math.floor(Math.random() * (maxHeight - minHeight) / 5) * 5;
     
     // Position it on the ground only
     const obstacleY = SCREEN_HEIGHT - FLOOR_HEIGHT - obstacleHeight/2;
@@ -202,18 +203,10 @@ const ObstacleGenerator = (entities, { time }) => {
     world.lastObstacleTime = time.current;
   }
   
-  return entities;
-};
-
-// Background System: Changes background based on score
-const BackgroundSystem = (entities, { time }) => {
-  if (!entities.floor) return entities;
-  
-  const currentScore = entities.score || 0;
-  const backgroundThemeIndex = Math.floor(currentScore / 10) % BACKGROUND_THEMES.length;
-  
-  // Only update if theme has changed and we're at a multiple of 10
-  if (entities.floor.themeIndex !== backgroundThemeIndex && currentScore > 0 && currentScore % 10 === 0) {
+  // 4. BACKGROUND CHANGES
+  // Only update if we're at a multiple of 10
+  const backgroundThemeIndex = Math.floor(score / 10) % BACKGROUND_THEMES.length;
+  if (entities.floor && entities.floor.themeIndex !== backgroundThemeIndex && score > 0 && score % 10 === 0) {
     entities.floor.themeIndex = backgroundThemeIndex;
     entities.floor.theme = BACKGROUND_THEMES[backgroundThemeIndex];
     
@@ -223,48 +216,16 @@ const BackgroundSystem = (entities, { time }) => {
     }
   }
   
-  return entities;
-};
-
-// Difficulty System: Adjusts game difficulty based on score
-const DifficultySystem = (entities, { time }) => {
-  if (!entities.world) return entities;
-  
-  const currentScore = entities.score || 0;
-  
-  // Update difficulty level (used by other systems)
-  entities.world.difficultyLevel = Math.floor(currentScore / 10) + 1;
+  // 5. DIFFICULTY SYSTEM
+  // Update difficulty level
+  if (entities.world) {
+    entities.world.difficultyLevel = Math.floor(score / 10) + 1;
+  }
   
   return entities;
 };
 
-// Helper function to check collisions
-const checkCollision = (character, entity) => {
-  if (!character || !entity) return false;
-  
-  const characterLeft = character.position.x - character.size.width / 2;
-  const characterRight = character.position.x + character.size.width / 2;
-  const characterTop = character.position.y - character.size.height / 2;
-  const characterBottom = character.position.y + character.size.height / 2;
-  
-  const entityLeft = entity.position.x - entity.size.width / 2;
-  const entityRight = entity.position.x + entity.size.width / 2;
-  const entityTop = entity.position.y - entity.size.height / 2;
-  const entityBottom = entity.position.y + entity.size.height / 2;
-  
-  // Allow some collision forgiveness (70% of the full box) for better game feel
-  const forgiveX = character.size.width * 0.15;
-  const forgiveY = character.size.height * 0.15;
-  
-  return (
-    characterRight - forgiveX > entityLeft &&
-    characterLeft + forgiveX < entityRight &&
-    characterBottom - forgiveY > entityTop &&
-    characterTop + forgiveY < entityBottom
-  );
-};
-
-// Load sounds
+// Load sounds - simplified error handling
 const loadSounds = async () => {
   try {
     // Load background music
@@ -300,14 +261,12 @@ const loadSounds = async () => {
   }
 };
 
-// Helper to play sound with error handling
+// Helper to play sound with minimal error handling
 const playSound = async (sound) => {
-  try {
-    if (sound) {
+  if (sound) {
+    try {
       await sound.replayAsync();
-    }
-  } catch (error) {
-    console.log("Error playing sound:", error);
+    } catch (error) {}
   }
 };
 
@@ -323,9 +282,7 @@ function GameApp() {
   const { 
     highScore, 
     updateGameStats, 
-    shareScore,
     coins,
-    achievements
   } = useGame();
   
   // Load sounds on component mount
@@ -424,7 +381,6 @@ function GameApp() {
     if (!e) return;
     
     if (e.type === 'game-over') {
-      console.log("Game over event");
       setRunning(false);
       setGameOver(true);
       
@@ -477,7 +433,7 @@ function GameApp() {
         <GameEngine
           ref={(ref) => { setGameEngine(ref) }}
           style={styles.gameContainer}
-          systems={[Physics, ObstacleGenerator, BackgroundSystem, DifficultySystem]}
+          systems={[GameSystem]} // Single combined system for better performance
           entities={setupEntities()}
           running={running}
           onEvent={onEvent}
