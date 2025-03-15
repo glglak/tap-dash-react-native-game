@@ -7,14 +7,7 @@ const Obstacle = (props) => {
     return null;
   }
   
-  const { position, size, type } = props;
-  
-  // Different obstacle types with more vibrant colors
-  const colors = {
-    small: '#FF5722', // Bright orange
-    medium: '#9C27B0', // Purple
-    large: '#F44336'  // Red
-  };
+  const { position, size, hit } = props;
   
   return (
     <View
@@ -26,48 +19,42 @@ const Obstacle = (props) => {
           top: position.y - size.height / 2,
           width: size.width,
           height: size.height,
-          backgroundColor: colors[type] || colors.small,
-          borderRadius: type === 'small' ? 0 : 5,
+          backgroundColor: hit ? '#FF6347' : '#228B22', // Red if hit, green otherwise
+          borderRadius: 5,
           borderWidth: 2,
           borderColor: '#000',
-          elevation: 4, // Android shadow
-          shadowColor: '#000', // iOS shadow
-          shadowOffset: { width: 2, height: 2 },
-          shadowOpacity: 0.5,
-          shadowRadius: 2,
+          elevation: 3, // For Android shadow
+          shadowColor: '#000', // For iOS shadow
+          shadowOffset: { width: 1, height: 1 },
+          shadowOpacity: 0.6,
+          shadowRadius: 1,
         }
       ]}
     >
-      {/* Add some internal details to make obstacles more visible */}
-      <View 
-        style={{
-          position: 'absolute',
-          top: '20%',
-          left: '20%',
-          width: '60%',
-          height: '10%',
-          backgroundColor: '#FFF',
-          opacity: 0.7
-        }} 
-      />
-      <View 
-        style={{
-          position: 'absolute',
-          top: '40%',
-          left: '20%',
-          width: '60%',
-          height: '10%',
-          backgroundColor: '#FFF',
-          opacity: 0.7
-        }} 
-      />
+      {/* Optional: Add spikes or details to make obstacles more interesting */}
+      <View style={styles.spike} />
+      <View style={[styles.spike, { left: 10 }]} />
+      <View style={[styles.spike, { left: 20 }]} />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   obstacle: {
-    zIndex: 100, // Make sure obstacles are above the background
+    zIndex: 990, // Below character but above background
+  },
+  spike: {
+    position: 'absolute',
+    width: 0,
+    height: 0,
+    borderLeftWidth: 5,
+    borderRightWidth: 5,
+    borderBottomWidth: 10,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: '#000',
+    top: -8,
+    left: 0,
   }
 });
 
