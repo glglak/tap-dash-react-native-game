@@ -463,9 +463,8 @@ function GameApp() {
     }
   };
   
-  // Handle share button press
+  // Handle share button press - explicitly pass the current score 
   const handleShare = () => {
-    // Use the score from the current game, not the high score
     shareScore(score);
     Vibration.vibrate(50);
   };
