@@ -5,9 +5,9 @@ A simple and addictive endless runner game where you tap to jump over obstacles.
 ## Fixed Issues
 
 Recent fixes have addressed:
-- Added proper `index.js` that registers the main component directly using AppRegistry
-- Fixed "main has not been registered" error by ensuring correct component registration
-- Resolved issues with Expo native modules by simplifying code structure
+- Fixed package version mismatches (expo-haptics and expo-sharing were for Expo SDK 50 but we're using SDK 49)
+- Added proper `index.js` that registers the main component
+- Resolved issues with Expo native modules
 - Implemented inline game systems to reduce import complexity
 - Added proper babel and metro configuration
 
@@ -37,8 +37,8 @@ npm install
 2. Clean your development environment:
 ```
 rm -rf node_modules
-npm install
 npm cache clean --force
+npm install
 ```
 
 3. Start the development server with a clean slate:
@@ -53,7 +53,18 @@ npx expo start --clear
 
 ## Troubleshooting
 
-### If you encounter the "Uncaught Error: main has not been registered" error:
+### If you encounter the "requireOptionalNativeModule is not a function" error:
+
+This is typically caused by incompatible package versions with your Expo SDK. This project uses Expo SDK 49 and requires these specific versions:
+
+```
+"expo-haptics": "~12.4.0",
+"expo-sharing": "~11.5.0",
+```
+
+If you're upgrading or changing packages, make sure they're compatible with your Expo SDK version.
+
+### For general "main has not been registered" errors:
 
 1. **Complete Reset** (Most Effective):
    ```
@@ -77,21 +88,6 @@ npx expo start --clear
    npm install -g expo-cli
    ```
 
-5. **Fix Expo Dependencies**:
-   ```
-   npx expo install --fix
-   ```
-
-6. **Restart Your Device/Simulator**:
-   Sometimes a clean restart of your test device can resolve caching issues.
-
-## Additional Debug Information
-
-If you're still having issues, check:
-1. The Metro bundler logs for specific module errors
-2. Make sure your bundle identifier in app.json matches your project
-3. Verify all native dependencies are properly linked
-
 ## Assets
 
 Place sound files in `assets/sounds/` directory:
@@ -104,5 +100,5 @@ Place sound files in `assets/sounds/` directory:
 ## Technologies Used
 
 - React Native
-- Expo
+- Expo SDK 49
 - React Native Game Engine
