@@ -43,6 +43,20 @@ let gameOverSound = null;
 let backgroundMusic = null;
 let milestone10Sound = null;
 
+// Component Renderers for Game Engine
+// These functions are what the game engine uses to render each entity
+const CharacterRenderer = (props) => {
+  return <Character {...props} />;
+};
+
+const ObstacleRenderer = (props) => {
+  return <Obstacle {...props} />;
+};
+
+const BackgroundRenderer = (props) => {
+  return <Background {...props} />;
+};
+
 // Define game systems - OPTIMIZED FOR PERFORMANCE
 // GameSystem: Combined system that handles everything for better performance
 const GameSystem = (entities, { touches, time }) => {
@@ -196,7 +210,7 @@ const GameSystem = (entities, { touches, time }) => {
       type: 'ground', // Only ground obstacles
       hit: false,
       passed: false,
-      renderer: Obstacle
+      renderer: ObstacleRenderer
     };
     
     // Update last entity spawn time
@@ -326,14 +340,14 @@ function GameApp() {
         isJumping: false,
         doubleJumpAvailable: true,
         jumping: false,
-        renderer: Character
+        renderer: CharacterRenderer
       },
       floor: {
         position: { x: SCREEN_WIDTH / 2, y: SCREEN_HEIGHT - FLOOR_HEIGHT / 2 },
         size: { width: SCREEN_WIDTH, height: FLOOR_HEIGHT },
         themeIndex: 0,
         theme: BACKGROUND_THEMES[0],
-        renderer: Background
+        renderer: BackgroundRenderer
       },
       score: 0,
       dispatch: (action) => {
