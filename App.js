@@ -24,8 +24,9 @@ const OBSTACLE_WIDTH = 40;
 const INITIAL_GAME_SPEED = 7;
 const MAX_GAME_SPEED = 15;
 const SPEED_INCREASE_RATE = 0.2;
-const MIN_OBSTACLE_SPACING = 250;
-const OBSTACLE_SPACING_VARIATION = 150; // Increased variation
+const MIN_OBSTACLE_SPACING = 200;  // Slightly reduced for more action
+const MAX_OBSTACLE_SPACING = 400;  // More variable spacing
+const OBSTACLE_TYPES = ['cactus', 'rock'];
 
 // Background color themes
 const BACKGROUND_THEMES = [
@@ -65,6 +66,10 @@ const GameSystem = (entities, { touches, time }) => {
     character.velocity.y = 0;
     character.isJumping = false;
     character.doubleJumpAvailable = true;
+    character.jumping = false;
+  } else {
+    // Set jumping state for animations
+    character.jumping = character.velocity.y < 0 || character.position.y < floorY;
   }
   
   // Check for ceiling collision
@@ -73,9 +78,6 @@ const GameSystem = (entities, { touches, time }) => {
     character.position.y = ceilingY;
     character.velocity.y = 0;
   }
-  
-  // Set jumping state for animations
-  character.jumping = character.velocity.y < 0 || character.position.y < floorY;
   
   // 2. JUMP HANDLING
   // Handle touch events for jumping
@@ -88,6 +90,7 @@ const GameSystem = (entities, { touches, time }) => {
     if (!character.isJumping) {
       // First jump
       character.isJumping = true;
+      character.jumping = true;
       character.velocity.y = JUMP_FORCE;
       
       // Play jump sound
@@ -164,9 +167,10 @@ const GameSystem = (entities, { touches, time }) => {
   });
   
   // Generate new obstacle with proper spacing
+  const nextObstacleSpacing = MIN_OBSTACLE_SPACING + Math.random() * (MAX_OBSTACLE_SPACING - MIN_OBSTACLE_SPACING);
   const minimumSpawnX = obstacles.length === 0 ? 
     world.width + 100 : // Start further from the screen edge
-    rightmostX + MIN_OBSTACLE_SPACING + Math.random() * OBSTACLE_SPACING_VARIATION;
+    rightmostX + nextObstacleSpacing;
   
   // Only generate if it's time (based on spacing and speed)
   if ((world.lastObstacleTime === undefined || 
@@ -178,12 +182,18 @@ const GameSystem = (entities, { touches, time }) => {
     
     // Determine obstacle height - vary based on score
     // Higher score = potentially taller obstacles, but never too tall to jump over
-    const minHeight = 30; // Shortest obstacle
-    const maxHeight = Math.min(80, 30 + Math.floor(score/3) * 5); // Increase height every 3 points, cap at 80
+    const minHeight = 30 + Math.floor(Math.random() * 20); // Add variability to min height (30-50)
+    const maxHeight = Math.min(90, 40 + Math.floor(score/3) * 5); // Increase height every 3 points, cap at 90
     const obstacleHeight = minHeight + Math.floor(Math.random() * (maxHeight - minHeight));
     
-    // Position it on the ground only
+    // Choose obstacle type - more variety
+    const obstacleType = OBSTACLE_TYPES[Math.floor(Math.random() * OBSTACLE_TYPES.length)];
+    
+    // Position it on the ground
     const obstacleY = SCREEN_HEIGHT - FLOOR_HEIGHT - obstacleHeight/2;
+    
+    // Randomize obstacle width slightly for more variety
+    const obstacleWidth = OBSTACLE_WIDTH + Math.floor(Math.random() * 10) - 5; // 35-45 width
     
     // Add new obstacle
     entities[obstacleId] = {
@@ -191,8 +201,8 @@ const GameSystem = (entities, { touches, time }) => {
         x: minimumSpawnX,
         y: obstacleY
       },
-      size: { width: OBSTACLE_WIDTH, height: obstacleHeight },
-      type: 'ground', // Only ground obstacles
+      size: { width: obstacleWidth, height: obstacleHeight },
+      type: obstacleType,
       hit: false,
       passed: false,
       renderer: Obstacle
@@ -205,12 +215,13 @@ const GameSystem = (entities, { touches, time }) => {
   // 4. BACKGROUND CHANGES
   // Only update if we're at a multiple of 10
   const backgroundThemeIndex = Math.floor(score / 10) % BACKGROUND_THEMES.length;
-  if (entities.floor && entities.floor.themeIndex !== backgroundThemeIndex && score > 0 && score % 10 === 0) {
+  if (entities.floor && entities.floor.themeIndex !== backgroundThemeIndex) {
+    // More restrictive condition removed so theme changes will happen
     entities.floor.themeIndex = backgroundThemeIndex;
     entities.floor.theme = BACKGROUND_THEMES[backgroundThemeIndex];
     
     // Dispatch theme change event
-    if (entities.dispatch) {
+    if (entities.dispatch && score > 0 && score % 10 === 0) {
       entities.dispatch({ type: 'theme-change' });
     }
   }
@@ -426,6 +437,9 @@ function GameApp() {
     } else if (e.type === 'jump' || e.type === 'double-jump') {
       // Play jump sound
       playSound(jumpSound);
+    } else if (e.type === 'theme-change') {
+      // Special effect for theme change
+      Vibration.vibrate(100);
     }
   };
   
