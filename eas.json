@@ -6,9 +6,6 @@
         "image": "latest"
       }
     },
-    "cli": {
-      "appVersionSource": "remote"
-    },
     "production": {
       "android": {
         "buildType": "app-bundle",
@@ -20,5 +17,8 @@
         }
       }
     }
+  },
+  "cli": {
+    "appVersionSource": "remote"
   }
 }
