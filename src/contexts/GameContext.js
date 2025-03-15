@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
-import * as Sharing from 'expo-sharing';
+import { Share } from 'react-native';
 
 // Initial Achievements
 const INITIAL_ACHIEVEMENTS = [
@@ -124,12 +124,11 @@ export const GameProvider = ({ children }) => {
       // Add store link if available
       // message += '\nGet it at: https://play.google.com/store/apps/details?id=com.glglak.tapdash';
       
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(message, {
-          dialogTitle: 'Share Your Tap Dash Score',
-          mimeType: 'text/plain'
-        });
-      }
+      // Use React Native's Share API for text content
+      await Share.share({
+        message: message,
+        title: 'Share Your Tap Dash Score'
+      });
     } catch (error) {
       console.error('Error sharing score', error);
     }
