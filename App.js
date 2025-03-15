@@ -6,6 +6,9 @@ import { Audio } from 'expo-av';
 // Import GameContext
 import { GameProvider, useGame } from './src/contexts/GameContext';
 
+// Import game systems
+import { Physics, ObstacleGenerator, DifficultySystem, setupEntities, JUMP_FORCE } from './src/systems/GameSystems';
+
 // Import game components
 import Character from './components/Character';
 import Obstacle from './components/Obstacle';
@@ -17,7 +20,6 @@ const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 // Game constants
 const GRAVITY = 0.8;
-const JUMP_FORCE = -15;
 const SUPER_JUMP_FORCE = -20; // Force for long press jump
 const CHARACTER_SIZE = { width: 50, height: 50 };
 const FLOOR_HEIGHT = 50;
@@ -80,9 +82,6 @@ const playSound = async (sound) => {
   }
 };
 
-// Existing game system functions remain the same 
-// (Physics, ObstacleGenerator, DifficultySystem, checkCollision)
-
 function GameApp() {
   // Game state
   const [running, setRunning] = useState(false);
@@ -125,10 +124,75 @@ function GameApp() {
     }
   }, [score]);
   
-  // Existing game functions remain the same
-  // (setupEntities, resetGame, handleTap, onEvent)
-
-  // Modify onEvent to use context high score
+  // Setup game entities
+  const setupGameEntities = () => {
+    // Create initial entities with the setupEntities function from GameSystems
+    const entities = setupEntities(SCREEN_WIDTH, SCREEN_HEIGHT);
+    
+    // Add dispatch function to handle game events
+    entities.dispatch = dispatch => {
+      if (gameEngine) {
+        gameEngine.dispatch(dispatch);
+      }
+    };
+    
+    return entities;
+  };
+  
+  // Reset game state for new game
+  const resetGame = () => {
+    setScore(0);
+    setGameOver(false);
+    
+    if (gameEngine) {
+      gameEngine.swap(setupGameEntities());
+    }
+    
+    // Start the game
+    setRunning(true);
+    
+    // Play background music
+    if (backgroundMusic) {
+      backgroundMusic.setPositionAsync(0);
+      backgroundMusic.playAsync();
+    }
+  };
+  
+  // Handle tap for jump
+  const handleTap = () => {
+    if (gameOver) {
+      resetGame();
+      return;
+    }
+    
+    if (!running) {
+      resetGame();
+      return;
+    }
+    
+    // If game is running, make the character jump
+    if (gameEngine && gameEngine.entities && gameEngine.entities.character) {
+      const character = gameEngine.entities.character;
+      
+      // Handle jumping logic
+      if (!character.isJumping) {
+        // First jump
+        character.isJumping = true;
+        character.velocity.y = JUMP_FORCE;
+        playSound(jumpSound);
+      } else if (character.doubleJumpAvailable) {
+        // Double jump
+        character.velocity.y = JUMP_FORCE * 1.2;
+        character.doubleJumpAvailable = false;
+        
+        // Extra haptic feedback for double jump
+        Vibration.vibrate(50);
+        playSound(jumpSound);
+      }
+    }
+  };
+  
+  // Handle game events
   const onEvent = (e) => {
     if (!e) return;
     
@@ -136,6 +200,9 @@ function GameApp() {
       console.log("Game over event");
       setRunning(false);
       setGameOver(true);
+      
+      // Play game over sound
+      playSound(gameOverSound);
       
       // Stop background music on game over
       if (backgroundMusic) {
@@ -164,8 +231,6 @@ function GameApp() {
     }
   };
   
-  // Rest of the component remains similar to original
-  
   // Show loading screen if sounds aren't loaded
   if (!soundsLoaded) {
     return (
@@ -183,7 +248,7 @@ function GameApp() {
           ref={(ref) => { setGameEngine(ref) }}
           style={styles.gameContainer}
           systems={[Physics, ObstacleGenerator, DifficultySystem]}
-          entities={setupEntities()}
+          entities={setupGameEntities()}
           running={running}
           onEvent={onEvent}
         />
@@ -235,12 +300,104 @@ export default function App() {
   );
 }
 
-// Styles remain the same, with slight additions
+// Styles
 const styles = StyleSheet.create({
-  // ... existing styles
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  gameContainer: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
+  overlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  titleText: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 20,
+    textShadowColor: '#000',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 5,
+  },
+  startText: {
+    fontSize: 24,
+    color: '#fff',
+    marginBottom: 30,
+  },
+  instructionsContainer: {
+    marginBottom: 40,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    padding: 20,
+    borderRadius: 10,
+  },
+  instructionText: {
+    fontSize: 16,
+    color: '#fff',
+    marginBottom: 10,
+  },
+  gameOverText: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    color: '#FF0000',
+    marginBottom: 20,
+    textShadowColor: '#000',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 5,
+  },
+  scoreText: {
+    fontSize: 32,
+    color: '#fff',
+    marginBottom: 10,
+  },
+  newHighScoreText: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#FFD700',
+    marginBottom: 20,
+    textShadowColor: '#000',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+  },
+  highScoreText: {
+    fontSize: 24,
+    color: '#fff',
+    marginBottom: 30,
+  },
+  restartText: {
+    fontSize: 20,
+    color: '#fff',
+  },
+  scoreContainer: {
+    position: 'absolute',
+    top: 40,
+    left: 20,
+    padding: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 10,
+  },
+  scoreDisplay: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
   coinDisplay: {
     fontSize: 18,
     color: 'gold',
     marginTop: 5
+  },
+  loadingText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginTop: 100,
   }
 });
