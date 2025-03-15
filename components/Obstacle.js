@@ -1,6 +1,14 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 
+// Obstacle colors based on difficulty/height
+const OBSTACLE_COLORS = {
+  easy: '#228B22',    // Forest Green
+  medium: '#FF8C00',  // Dark Orange
+  hard: '#DC143C',    // Crimson
+  expert: '#800080'   // Purple
+};
+
 const Obstacle = (props) => {
   if (!props || !props.position || !props.size) {
     console.log("Missing props in Obstacle component");
@@ -8,6 +16,21 @@ const Obstacle = (props) => {
   }
   
   const { position, size, hit } = props;
+  
+  // Determine obstacle color based on height
+  let difficultyColor = OBSTACLE_COLORS.easy;
+  if (size.height > 70) {
+    difficultyColor = OBSTACLE_COLORS.expert;
+  } else if (size.height > 60) {
+    difficultyColor = OBSTACLE_COLORS.hard;
+  } else if (size.height > 50) {
+    difficultyColor = OBSTACLE_COLORS.medium;
+  }
+  
+  const obstacleColor = hit ? '#FF6347' : difficultyColor; // Red if hit, difficulty color otherwise
+  
+  // Determine the number of spikes based on difficulty
+  const numberOfSpikes = Math.ceil(size.height / 15);
   
   return (
     <View
@@ -19,7 +42,7 @@ const Obstacle = (props) => {
           top: position.y - size.height / 2,
           width: size.width,
           height: size.height,
-          backgroundColor: hit ? '#FF6347' : '#228B22', // Red if hit, green otherwise
+          backgroundColor: obstacleColor,
           borderRadius: 5,
           borderWidth: 2,
           borderColor: '#000',
@@ -31,10 +54,19 @@ const Obstacle = (props) => {
         }
       ]}
     >
-      {/* Optional: Add spikes or details to make obstacles more interesting */}
-      <View style={styles.spike} />
-      <View style={[styles.spike, { left: 10 }]} />
-      <View style={[styles.spike, { left: 20 }]} />
+      {/* Generate spikes based on difficulty */}
+      {Array.from({ length: numberOfSpikes }).map((_, index) => (
+        <View 
+          key={index} 
+          style={[
+            styles.spike, 
+            { 
+              left: size.width / 2 - 5, 
+              top: -(10 + index * 5 % 20)
+            }
+          ]} 
+        />
+      ))}
     </View>
   );
 };
@@ -53,8 +85,6 @@ const styles = StyleSheet.create({
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
     borderBottomColor: '#000',
-    top: -8,
-    left: 0,
   }
 });
 
