@@ -21,11 +21,11 @@ const JUMP_FORCE = -16;
 const CHARACTER_SIZE = { width: 45, height: 45 }; // Smaller character
 const FLOOR_HEIGHT = 50;
 const OBSTACLE_WIDTH = 40;
-const INITIAL_GAME_SPEED = 5; // Reduced initial speed to make it easier
-const MAX_GAME_SPEED = 12; // Reduced max speed
-const SPEED_INCREASE_RATE = 0.1; // Slower speed increase
-const MIN_OBSTACLE_SPACING = 250;  // Increased min spacing
-const MAX_OBSTACLE_SPACING = 450;  // More spacing for easier gameplay
+const INITIAL_GAME_SPEED = 5; // Base speed
+const MAX_GAME_SPEED = 12;
+const SPEED_INCREASE_RATE = 0.1; // How much to increase per score
+const MIN_OBSTACLE_SPACING = 250;
+const MAX_OBSTACLE_SPACING = 450;
 const OBSTACLE_TYPES = ['cactus', 'rock'];
 
 // Background color themes
@@ -45,19 +45,22 @@ let backgroundMusic = null;
 let milestone10Sound = null;
 
 // Game System that handles everything
-const GameSystem = (entities, { touches, time }) => {
+const GameSystem = (entities, { touches, time, dispatch }) => {
   if (!entities.character || !entities.world) return entities;
   
   const character = entities.character;
   const world = entities.world;
   const score = entities.score || 0;
   
-  // 1. PHYSICS HANDLING
-  // Update character Y position based on velocity
-  character.position.y += character.velocity.y;
+  // Get delta time (time since last frame) to ensure consistent speed regardless of frame rate
+  const delta = time.delta / 16.67; // normalize to expected 60fps (16.67ms per frame)
   
-  // Apply gravity to velocity
-  character.velocity.y += GRAVITY;
+  // 1. PHYSICS HANDLING
+  // Update character Y position based on velocity (adjusted by delta time)
+  character.position.y += character.velocity.y * delta;
+  
+  // Apply gravity to velocity (adjusted by delta time)
+  character.velocity.y += GRAVITY * delta;
   
   // Check for floor collision
   const floorY = SCREEN_HEIGHT - FLOOR_HEIGHT - character.size.height / 2;
@@ -94,8 +97,8 @@ const GameSystem = (entities, { touches, time }) => {
       character.velocity.y = JUMP_FORCE;
       
       // Play jump sound
-      if (entities.dispatch) {
-        entities.dispatch({ type: 'jump' });
+      if (dispatch) {
+        dispatch({ type: 'jump' });
       }
     } else if (character.doubleJumpAvailable) {
       // Second jump in air (double jump)
@@ -103,16 +106,28 @@ const GameSystem = (entities, { touches, time }) => {
       character.doubleJumpAvailable = false;
       
       // Play double jump sound
-      if (entities.dispatch) {
-        entities.dispatch({ type: 'double-jump' });
+      if (dispatch) {
+        dispatch({ type: 'double-jump' });
       }
     }
   }
   
-  // 3. OBSTACLE HANDLING
-  // Game speed increases with score - faster obstacles
-  const gameSpeed = Math.min(INITIAL_GAME_SPEED + (score * SPEED_INCREASE_RATE), MAX_GAME_SPEED);
+  // Get current game speed
+  // Store game speed in world to ensure consistent speed between frames
+  if (world.gameSpeed === undefined) {
+    world.gameSpeed = INITIAL_GAME_SPEED;
+  }
   
+  // Smoothly adjust game speed toward target (prevents sudden speed changes)
+  const targetGameSpeed = Math.min(INITIAL_GAME_SPEED + (score * SPEED_INCREASE_RATE), MAX_GAME_SPEED);
+  
+  // Gradually adjust speed with smoothing (important for consistent feeling)
+  world.gameSpeed = world.gameSpeed * 0.95 + targetGameSpeed * 0.05;
+  
+  // Use the delta time to ensure consistent speed regardless of frame rate
+  const moveAmount = world.gameSpeed * delta;
+  
+  // 3. OBSTACLE HANDLING
   // Get all obstacles
   const obstacles = Object.keys(entities).filter(key => key.includes('obstacle'));
   
@@ -120,8 +135,8 @@ const GameSystem = (entities, { touches, time }) => {
   obstacles.forEach(obstacleKey => {
     const obstacle = entities[obstacleKey];
     if (obstacle) {
-      // Move obstacle to the left
-      obstacle.position.x -= gameSpeed;
+      // Move obstacle to the left with delta-time adjusted speed
+      obstacle.position.x -= moveAmount;
       
       // If obstacle is off-screen, remove it
       if (obstacle.position.x < -obstacle.size.width) {
@@ -138,8 +153,8 @@ const GameSystem = (entities, { touches, time }) => {
         
         obstacle.hit = true;
         // Game over
-        if (entities.dispatch) {
-          entities.dispatch({ type: 'game-over' });
+        if (dispatch) {
+          dispatch({ type: 'game-over' });
         }
       }
       
@@ -149,8 +164,8 @@ const GameSystem = (entities, { touches, time }) => {
         entities.score = score + 1;
         
         // Dispatch score event
-        if (entities.dispatch) {
-          entities.dispatch({ type: 'score' });
+        if (dispatch) {
+          dispatch({ type: 'score' });
         }
       }
     }
@@ -173,6 +188,7 @@ const GameSystem = (entities, { touches, time }) => {
     rightmostX + nextObstacleSpacing;
   
   // Only generate if it's time (based on spacing and speed)
+  // Use elapsed time instead of counter to ensure consistent behavior
   if ((world.lastObstacleTime === undefined || 
        time.current - world.lastObstacleTime > 800) && // Longer time between obstacles
       rightmostX < minimumSpawnX - MIN_OBSTACLE_SPACING) {
@@ -228,8 +244,8 @@ const GameSystem = (entities, { touches, time }) => {
     entities.floor.theme = BACKGROUND_THEMES[backgroundThemeIndex];
     
     // Dispatch theme change event
-    if (entities.dispatch && score > 0 && score % 10 === 0) {
-      entities.dispatch({ type: 'theme-change' });
+    if (dispatch && score > 0 && score % 10 === 0) {
+      dispatch({ type: 'theme-change' });
     }
   }
   
@@ -347,7 +363,8 @@ function GameApp() {
         width: SCREEN_WIDTH,
         height: SCREEN_HEIGHT,
         lastObstacleTime: undefined,
-        difficultyLevel: 1
+        difficultyLevel: 1,
+        gameSpeed: INITIAL_GAME_SPEED  // Initialize game speed here
       },
       character: {
         position: { x: characterX, y: characterY },
@@ -365,12 +382,7 @@ function GameApp() {
         theme: BACKGROUND_THEMES[0],
         renderer: Background
       },
-      score: 0,
-      dispatch: (action) => {
-        if (gameEngine) {
-          gameEngine.dispatch(action);
-        }
-      }
+      score: 0
     };
   };
   
