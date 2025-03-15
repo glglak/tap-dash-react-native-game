@@ -7,7 +7,8 @@
         "gradleCommand": ":app:assembleRelease",
         "env": {
           "ANDROID_COMPILE_SDK_VERSION": "34",
-          "ANDROID_TARGET_SDK_VERSION": "34"
+          "ANDROID_TARGET_SDK_VERSION": "34",
+          "GRADLE_OPTS": "-Dorg.gradle.jvmargs='-Xmx2048m -XX:MaxMetaspaceSize=512m' -Dorg.gradle.configuration-cache=false"
         }
       }
     },
@@ -20,7 +21,7 @@
         "env": {
           "ANDROID_COMPILE_SDK_VERSION": "34",
           "ANDROID_TARGET_SDK_VERSION": "34",
-          "GRADLE_OPTS": "-Dorg.gradle.jvmargs='-Xmx2048m -XX:MaxMetaspaceSize=512m'"
+          "GRADLE_OPTS": "-Dorg.gradle.jvmargs='-Xmx2048m -XX:MaxMetaspaceSize=512m' -Dorg.gradle.configuration-cache=false"
         }
       }
     }
@@ -28,8 +29,5 @@
   "cli": {
     "appVersionSource": "remote",
     "version": "^15.0.0"
-  },
-  "hooks": {
-    "preBuild": ".eas-hooks/pre-build.js"
   }
 }
