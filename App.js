@@ -51,7 +51,13 @@ const debugCharacter = (character) => {
 
 // Game System that handles everything
 const GameSystem = (entities, { touches, time }) => {
-  if (!entities.character || !entities.world) return entities;
+  if (!entities.character || !entities.world) {
+    console.log("GameSystem: Missing character or world entity!");
+    return entities;
+  }
+  
+  // Log character position for debugging
+  console.log("GameSystem - Character position:", entities.character.position);
   
   const character = entities.character;
   const world = entities.world;
@@ -287,6 +293,27 @@ const DebugRenderer = (props) => {
   );
 };
 
+// Standalone CharacterRenderer component - a fallback outside GameEngine
+const StandaloneCharacter = ({x, y, width, height}) => {
+  return (
+    <View
+      style={{
+        position: 'absolute',
+        left: x - width / 2,
+        top: y - height / 2,
+        width: width,
+        height: height,
+        backgroundColor: 'purple',
+        borderWidth: 4,
+        borderColor: 'yellow',
+        zIndex: 9999
+      }}
+    >
+      <Text style={{color: 'white', textAlign: 'center'}}>!!</Text>
+    </View>
+  );
+};
+
 function GameApp() {
   // Game state
   const [running, setRunning] = useState(false);
@@ -295,8 +322,7 @@ function GameApp() {
   const [gameOver, setGameOver] = useState(false);
   const [soundsLoaded, setSoundsLoaded] = useState(false);
   const [debugInfo, setDebugInfo] = useState("");
-  const [entities, setEntities] = useState(null);
-  const initializeEntitiesOnce = useRef(false);
+  const [showFallbackChar, setShowFallbackChar] = useState(false);
   
   // Use GameContext
   const { 
@@ -334,6 +360,12 @@ function GameApp() {
   const setupEntities = () => {
     console.log('Setting up entities with character size:', CHARACTER_SIZE.width, CHARACTER_SIZE.height);
     
+    // Character position
+    const characterX = SCREEN_WIDTH * 0.2;
+    const characterY = SCREEN_HEIGHT - FLOOR_HEIGHT - CHARACTER_SIZE.height/2;
+    
+    console.log('Character initial position:', characterX, characterY);
+    
     return {
       world: {
         width: SCREEN_WIDTH,
@@ -342,7 +374,7 @@ function GameApp() {
         difficultyLevel: 1
       },
       character: {
-        position: { x: SCREEN_WIDTH * 0.2, y: SCREEN_HEIGHT - FLOOR_HEIGHT - CHARACTER_SIZE.height/2 },
+        position: { x: characterX, y: characterY },
         velocity: { x: 0, y: 0 },
         size: CHARACTER_SIZE,
         isJumping: false,
@@ -368,13 +400,15 @@ function GameApp() {
       }
     };
   };
-
-  // Initialize entities once
+  
+  // Set a timeout to show fallback character after 2 seconds
   useEffect(() => {
-    if (!initializeEntitiesOnce.current) {
-      setEntities(setupEntities());
-      initializeEntitiesOnce.current = true;
-    }
+    const timer = setTimeout(() => {
+      setShowFallbackChar(true);
+      console.log("Showing fallback character");
+    }, 2000);
+    
+    return () => clearTimeout(timer);
   }, []);
   
   // Reset game state for new game
@@ -383,7 +417,9 @@ function GameApp() {
     setGameOver(false);
     
     if (gameEngine) {
-      gameEngine.swap(setupEntities());
+      const newEntities = setupEntities();
+      console.log("Resetting game with entities:", newEntities);
+      gameEngine.swap(newEntities);
     }
     
     // Start the game
@@ -456,7 +492,7 @@ function GameApp() {
   };
   
   // Show loading screen if sounds aren't loaded
-  if (!soundsLoaded || !entities) {
+  if (!soundsLoaded) {
     return (
       <View style={styles.container}>
         <Text style={styles.loadingText}>Loading game...</Text>
@@ -469,11 +505,21 @@ function GameApp() {
       <View style={styles.container}>
         <StatusBar hidden={true} />
         
+        {/* Fallback character for testing */}
+        {showFallbackChar && (
+          <StandaloneCharacter 
+            x={SCREEN_WIDTH * 0.2} 
+            y={SCREEN_HEIGHT - FLOOR_HEIGHT - CHARACTER_SIZE.height/2}
+            width={CHARACTER_SIZE.width} 
+            height={CHARACTER_SIZE.height} 
+          />
+        )}
+        
         <GameEngine
           ref={(ref) => { setGameEngine(ref) }}
           style={styles.gameContainer}
           systems={[GameSystem]} 
-          entities={entities}
+          entities={setupEntities()}
           running={running}
           onEvent={onEvent}
         />
@@ -482,6 +528,7 @@ function GameApp() {
         <View style={styles.debugOverlay}>
           <Text style={styles.debugText}>{debugInfo}</Text>
           <Text style={styles.debugText}>Screen: {SCREEN_WIDTH}x{SCREEN_HEIGHT}</Text>
+          <Text style={styles.debugText}>Character should be at: {SCREEN_WIDTH * 0.2},{SCREEN_HEIGHT - FLOOR_HEIGHT - CHARACTER_SIZE.height/2}</Text>
         </View>
         
         {!running && !gameOver && (
