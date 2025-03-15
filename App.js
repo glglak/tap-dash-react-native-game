@@ -25,13 +25,24 @@ const OBSTACLE_WIDTH = 30;
 const INITIAL_GAME_SPEED = 5;
 const MAX_GAME_SPEED = 10;
 const SPEED_INCREASE_RATE = 0.1; // How much to increase speed per point
+const MIN_OBSTACLE_SPACING = 300; // Minimum distance between obstacles
+const OBSTACLE_SPACING_VARIATION = 150; // Additional random distance between obstacles
+
+// Background color themes
+const BACKGROUND_THEMES = [
+  { sky: '#87CEEB', ground: '#8B4513' }, // Default - Sky blue with brown ground
+  { sky: '#FF7F50', ground: '#654321' }, // Sunset theme
+  { sky: '#4B0082', ground: '#2F4F4F' }, // Night theme
+  { sky: '#7CFC00', ground: '#006400' }, // Alien planet theme
+  { sky: '#FFD700', ground: '#CD853F' }, // Desert theme
+];
 
 // Sound objects
 let jumpSound = null;
 let scoreSound = null;
 let gameOverSound = null;
 let backgroundMusic = null;
-let milestone5Sound = null;
+let milestone10Sound = null;
 
 // Define game systems
 // Physics System: Handles character movement, gravity, and jumping
@@ -128,20 +139,38 @@ const ObstacleGenerator = (entities, { time }) => {
         }
     });
     
-    // Generate new obstacle based on time and randomness
-    if (world.lastObstacleTime === undefined || 
-        time.current - world.lastObstacleTime > (1500 + Math.random() * 1000) / gameSpeed) {
+    // Find the rightmost obstacle to maintain spacing
+    let rightmostX = 0;
+    obstacles.forEach(obstacleKey => {
+        const obstacle = entities[obstacleKey];
+        rightmostX = Math.max(rightmostX, obstacle.position.x);
+    });
+    
+    // Generate new obstacle with proper spacing
+    const minimumSpawnX = obstacles.length === 0 ? 
+        world.width + OBSTACLE_WIDTH : 
+        rightmostX + MIN_OBSTACLE_SPACING + Math.random() * OBSTACLE_SPACING_VARIATION;
+    
+    // Only generate if it's time (based on spacing and speed) and we have a valid spawn position
+    if ((world.lastObstacleTime === undefined || 
+         time.current - world.lastObstacleTime > 1500 / gameSpeed) && 
+        rightmostX < minimumSpawnX - MIN_OBSTACLE_SPACING) {
         
         // Create obstacle ID
         const newObstacleId = `obstacle-${Date.now()}`;
         
+        // Determine obstacle height variation (make it more challenging as score increases)
+        const baseHeight = 50;
+        const heightVariation = Math.min(30, (entities.score || 0) / 5 * 5); // Increase variation with score, max 30
+        const obstacleHeight = baseHeight + (Math.random() * heightVariation);
+        
         // Add new obstacle
         entities[newObstacleId] = {
             position: { 
-                x: world.width + OBSTACLE_WIDTH,
-                y: SCREEN_HEIGHT - FLOOR_HEIGHT - 25 // 25 is half obstacle height
+                x: minimumSpawnX,
+                y: SCREEN_HEIGHT - FLOOR_HEIGHT - obstacleHeight / 2
             },
-            size: { width: OBSTACLE_WIDTH, height: 50 },
+            size: { width: OBSTACLE_WIDTH, height: obstacleHeight },
             hit: false,
             passed: false,
             renderer: Obstacle
@@ -154,12 +183,31 @@ const ObstacleGenerator = (entities, { time }) => {
     return entities;
 };
 
+// Background System: Changes background based on score
+const BackgroundSystem = (entities, { time }) => {
+    const currentScore = entities.score || 0;
+    const backgroundThemeIndex = Math.floor(currentScore / 10) % BACKGROUND_THEMES.length;
+    
+    // Only update if theme has changed
+    if (entities.floor.themeIndex !== backgroundThemeIndex) {
+        entities.floor.themeIndex = backgroundThemeIndex;
+        entities.floor.theme = BACKGROUND_THEMES[backgroundThemeIndex];
+        
+        // Dispatch theme change event
+        if (entities.dispatch && backgroundThemeIndex > 0) { // Don't dispatch for initial theme
+            entities.dispatch({ type: 'theme-change' });
+        }
+    }
+    
+    return entities;
+};
+
 // Difficulty System: Adjusts game difficulty based on score
 const DifficultySystem = (entities, { time }) => {
-    // This could include:
-    // - Adjusting obstacle generation frequency
-    // - Adding different types of obstacles
-    // - Changing game speed beyond the basic formula
+    const currentScore = entities.score || 0;
+    
+    // Update difficulty level (could be used by other systems)
+    entities.world.difficultyLevel = Math.floor(currentScore / 10) + 1;
     
     return entities;
 };
@@ -216,11 +264,11 @@ const loadSounds = async () => {
     );
     gameOverSound = gameOver;
     
-    // Load the special milestone sound for every 5 points
+    // Load the special milestone sound for every 10 points
     const { sound: milestone } = await Audio.Sound.createAsync(
       require('./assets/sounds/milestone5.mp3')
     );
-    milestone5Sound = milestone;
+    milestone10Sound = milestone;
   } catch (error) {
     console.log("Error loading sounds:", error);
   }
@@ -268,7 +316,7 @@ function GameApp() {
       if (jumpSound) jumpSound.unloadAsync();
       if (scoreSound) scoreSound.unloadAsync();
       if (gameOverSound) gameOverSound.unloadAsync();
-      if (milestone5Sound) milestone5Sound.unloadAsync();
+      if (milestone10Sound) milestone10Sound.unloadAsync();
     };
   }, []);
 
@@ -285,7 +333,8 @@ function GameApp() {
       world: {
         width: SCREEN_WIDTH,
         height: SCREEN_HEIGHT,
-        lastObstacleTime: undefined
+        lastObstacleTime: undefined,
+        difficultyLevel: 1
       },
       character: {
         position: { x: SCREEN_WIDTH * 0.2, y: SCREEN_HEIGHT - FLOOR_HEIGHT - 25 },
@@ -299,6 +348,8 @@ function GameApp() {
       floor: {
         position: { x: SCREEN_WIDTH / 2, y: SCREEN_HEIGHT - FLOOR_HEIGHT / 2 },
         size: { width: SCREEN_WIDTH, height: FLOOR_HEIGHT },
+        themeIndex: 0,
+        theme: BACKGROUND_THEMES[0],
         renderer: Background
       },
       score: 0,
@@ -365,13 +416,13 @@ function GameApp() {
       // Play normal score sound
       playSound(scoreSound);
       
-      // Check if we hit a multiple of 5 - play special milestone sound
-      if (newScore % 5 === 0) {
+      // Check if we hit a multiple of 10 - play special milestone sound
+      if (newScore % 10 === 0) {
         // Play special milestone sound
-        playSound(milestone5Sound);
+        playSound(milestone10Sound);
         
         // Add additional feedback for milestone
-        Vibration.vibrate([0, 70, 50, 70]);
+        Vibration.vibrate([0, 100, 50, 100, 50, 100]);
       }
       
       // Update the score in game entities
@@ -385,6 +436,9 @@ function GameApp() {
       // Play jump sound with vibration for double jump
       playSound(jumpSound);
       Vibration.vibrate(50);
+    } else if (e.type === 'theme-change') {
+      // Visual or audio feedback for theme change
+      Vibration.vibrate(30);
     }
   };
   
@@ -404,7 +458,7 @@ function GameApp() {
         <GameEngine
           ref={(ref) => { setGameEngine(ref) }}
           style={styles.gameContainer}
-          systems={[Physics, ObstacleGenerator, DifficultySystem]}
+          systems={[Physics, ObstacleGenerator, BackgroundSystem, DifficultySystem]}
           entities={setupEntities()}
           running={running}
           onEvent={onEvent}
@@ -416,9 +470,9 @@ function GameApp() {
             <Text style={styles.startText}>Tap to Start</Text>
             <View style={styles.instructionsContainer}>
               <Text style={styles.instructionText}>• Tap to jump</Text>
-              <Text style={styles.instructionText}>• Hold for higher jump</Text>
               <Text style={styles.instructionText}>• Double tap for double jump</Text>
-              <Text style={styles.instructionText}>• Every 5 points gives special bonus!</Text>
+              <Text style={styles.instructionText}>• Every 10 points changes the background!</Text>
+              <Text style={styles.instructionText}>• Obstacles get trickier as you progress</Text>
             </View>
             {highScore > 0 && (
               <Text style={styles.highScoreText}>High Score: {highScore}</Text>
@@ -442,6 +496,7 @@ function GameApp() {
           <View style={styles.scoreContainer}>
             <Text style={styles.scoreDisplay}>Score: {score}</Text>
             <Text style={styles.coinDisplay}>Coins: {coins}</Text>
+            <Text style={styles.levelDisplay}>Level: {Math.floor(score / 10) + 1}</Text>
           </View>
         )}
       </View>
@@ -550,6 +605,11 @@ const styles = StyleSheet.create({
   coinDisplay: {
     fontSize: 18,
     color: 'gold',
+    marginTop: 5
+  },
+  levelDisplay: {
+    fontSize: 18,
+    color: '#00FFFF',
     marginTop: 5
   },
   loadingText: {
