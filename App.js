@@ -15,19 +15,19 @@ import Background from './components/Background';
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
-// Game constants - ADJUSTED FOR BETTER PLAYABILITY
-const GRAVITY = 1.0; // Reduced gravity
-const JUMP_FORCE = -16; // Less strong jump
-const CHARACTER_SIZE = { width: 60, height: 60 }; // Larger character for visibility
+// Game constants
+const GRAVITY = 1.0;
+const JUMP_FORCE = -16;
+const CHARACTER_SIZE = { width: 60, height: 60 };
 const FLOOR_HEIGHT = 50;
-const OBSTACLE_WIDTH = 40; // Wider obstacles for visibility
-const INITIAL_GAME_SPEED = 7; // Reduced initial speed
-const MAX_GAME_SPEED = 15; // Reduced max speed
-const SPEED_INCREASE_RATE = 0.2; // Slower speed increase
-const MIN_OBSTACLE_SPACING = 250; // More spacing between obstacles
-const OBSTACLE_SPACING_VARIATION = 100; // Less variation for more frequent obstacles
+const OBSTACLE_WIDTH = 40;
+const INITIAL_GAME_SPEED = 7;
+const MAX_GAME_SPEED = 15;
+const SPEED_INCREASE_RATE = 0.2;
+const MIN_OBSTACLE_SPACING = 250;
+const OBSTACLE_SPACING_VARIATION = 100;
 
-// Background color themes - simplified for performance
+// Background color themes
 const BACKGROUND_THEMES = [
   { sky: '#87CEEB', ground: '#8B4513' }, // Default - Sky blue with brown ground
   { sky: '#FF7F50', ground: '#654321' }, // Sunset theme
@@ -43,22 +43,13 @@ let gameOverSound = null;
 let backgroundMusic = null;
 let milestone10Sound = null;
 
-// Component Renderers for Game Engine
-// These functions are what the game engine uses to render each entity
-const CharacterRenderer = (props) => {
-  return <Character {...props} />;
+// Define debug function to show character position and size
+const debugCharacter = (character) => {
+  if (!character) return "No character";
+  return `Char: (${Math.round(character.position.x)},${Math.round(character.position.y)}) W:${character.size.width} H:${character.size.height} Jump:${character.isJumping}`;
 };
 
-const ObstacleRenderer = (props) => {
-  return <Obstacle {...props} />;
-};
-
-const BackgroundRenderer = (props) => {
-  return <Background {...props} />;
-};
-
-// Define game systems - OPTIMIZED FOR PERFORMANCE
-// GameSystem: Combined system that handles everything for better performance
+// Game System that handles everything
 const GameSystem = (entities, { touches, time }) => {
   if (!entities.character || !entities.world) return entities;
   
@@ -120,6 +111,9 @@ const GameSystem = (entities, { touches, time }) => {
       }
     }
   }
+  
+  // Update debug info
+  entities.debugInfo = debugCharacter(character);
   
   // 3. OBSTACLE HANDLING
   // Game speed increases with score - faster obstacles
@@ -210,7 +204,7 @@ const GameSystem = (entities, { touches, time }) => {
       type: 'ground', // Only ground obstacles
       hit: false,
       passed: false,
-      renderer: ObstacleRenderer
+      renderer: Obstacle
     };
     
     // Update last entity spawn time
@@ -284,6 +278,15 @@ const playSound = async (sound) => {
   }
 };
 
+// Simple debug renderer that directly renders a view
+const DebugRenderer = (props) => {
+  return (
+    <View style={styles.debugText}>
+      <Text style={{ color: 'white' }}>{props.value}</Text>
+    </View>
+  );
+};
+
 function GameApp() {
   // Game state
   const [running, setRunning] = useState(false);
@@ -291,6 +294,7 @@ function GameApp() {
   const [score, setScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [soundsLoaded, setSoundsLoaded] = useState(false);
+  const [debugInfo, setDebugInfo] = useState("");
   
   // Use GameContext
   const { 
@@ -326,6 +330,15 @@ function GameApp() {
   
   // Setup game entities
   const setupEntities = () => {
+    console.log('Setting up entities with character size:', CHARACTER_SIZE.width, CHARACTER_SIZE.height);
+    
+    // IMPORTANT: Create a character directly in the view for testing
+    setTimeout(() => {
+      if (gameEngine) {
+        setDebugInfo(`Character at X: ${SCREEN_WIDTH * 0.2}, Y: ${SCREEN_HEIGHT - FLOOR_HEIGHT - CHARACTER_SIZE.height/2}`);
+      }
+    }, 1000);
+    
     return {
       world: {
         width: SCREEN_WIDTH,
@@ -340,15 +353,18 @@ function GameApp() {
         isJumping: false,
         doubleJumpAvailable: true,
         jumping: false,
-        renderer: CharacterRenderer
+        renderer: Character
       },
       floor: {
         position: { x: SCREEN_WIDTH / 2, y: SCREEN_HEIGHT - FLOOR_HEIGHT / 2 },
         size: { width: SCREEN_WIDTH, height: FLOOR_HEIGHT },
         themeIndex: 0,
         theme: BACKGROUND_THEMES[0],
-        renderer: BackgroundRenderer
+        renderer: Background
       },
+      // Add a debug info entity
+      debugInfo: "Debug info will appear here",
+      debugInfoRenderer: { renderer: DebugRenderer, value: "Debug info will appear here" },
       score: 0,
       dispatch: (action) => {
         if (gameEngine) {
@@ -428,6 +444,11 @@ function GameApp() {
     } else if (e.type === 'jump' || e.type === 'double-jump') {
       // Play jump sound
       playSound(jumpSound);
+      
+      // Update debug information
+      if (gameEngine && gameEngine.entities && gameEngine.entities.debugInfo) {
+        setDebugInfo(gameEngine.entities.debugInfo);
+      }
     }
   };
   
@@ -444,6 +465,10 @@ function GameApp() {
     <TouchableWithoutFeedback onPress={handleTap}>
       <View style={styles.container}>
         <StatusBar hidden={true} />
+        
+        {/* Add a fixed reference character for testing */}
+        <View style={styles.testCharacter}/>
+        
         <GameEngine
           ref={(ref) => { setGameEngine(ref) }}
           style={styles.gameContainer}
@@ -452,6 +477,12 @@ function GameApp() {
           running={running}
           onEvent={onEvent}
         />
+        
+        {/* Debug overlay */}
+        <View style={styles.debugOverlay}>
+          <Text style={styles.debugText}>{debugInfo}</Text>
+          <Text style={styles.debugText}>Screen: {SCREEN_WIDTH}x{SCREEN_HEIGHT}</Text>
+        </View>
         
         {!running && !gameOver && (
           <View style={styles.overlay}>
@@ -520,6 +551,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  debugOverlay: {
+    position: 'absolute',
+    top: 120,
+    left: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    padding: 10,
+    borderRadius: 5,
+    zIndex: 9999, // Make sure it's on top
+  },
+  debugText: {
+    color: 'white',
+    fontSize: 10,
+  },
+  // Test character to see if it appears
+  testCharacter: {
+    position: 'absolute',
+    top: 200,
+    left: 200,
+    width: 30,
+    height: 30,
+    backgroundColor: 'red',
+    zIndex: 9999,
   },
   titleText: {
     fontSize: 48,
