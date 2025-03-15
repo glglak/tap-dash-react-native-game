@@ -18,14 +18,14 @@ const SCREEN_HEIGHT = Dimensions.get('window').height;
 // Game constants
 const GRAVITY = 1.0;
 const JUMP_FORCE = -16;
-const CHARACTER_SIZE = { width: 60, height: 60 };
+const CHARACTER_SIZE = { width: 45, height: 45 }; // Smaller character
 const FLOOR_HEIGHT = 50;
 const OBSTACLE_WIDTH = 40;
-const INITIAL_GAME_SPEED = 7;
-const MAX_GAME_SPEED = 15;
-const SPEED_INCREASE_RATE = 0.2;
-const MIN_OBSTACLE_SPACING = 200;  // Slightly reduced for more action
-const MAX_OBSTACLE_SPACING = 400;  // More variable spacing
+const INITIAL_GAME_SPEED = 5; // Reduced initial speed to make it easier
+const MAX_GAME_SPEED = 12; // Reduced max speed
+const SPEED_INCREASE_RATE = 0.1; // Slower speed increase
+const MIN_OBSTACLE_SPACING = 250;  // Increased min spacing
+const MAX_OBSTACLE_SPACING = 450;  // More spacing for easier gameplay
 const OBSTACLE_TYPES = ['cactus', 'rock'];
 
 // Background color themes
@@ -180,10 +180,17 @@ const GameSystem = (entities, { touches, time }) => {
     // Spawn obstacle
     const obstacleId = `obstacle-${Date.now()}`;
     
-    // Determine obstacle height - vary based on score
-    // Higher score = potentially taller obstacles, but never too tall to jump over
-    const minHeight = 30 + Math.floor(Math.random() * 20); // Add variability to min height (30-50)
-    const maxHeight = Math.min(90, 40 + Math.floor(score/3) * 5); // Increase height every 3 points, cap at 90
+    // Determine obstacle height - vary based on score but make it easier at the start
+    // First few obstacles are much smaller
+    let minHeight, maxHeight;
+    if (score < 5) {
+      minHeight = 20 + Math.floor(Math.random() * 15); // Smaller obstacles (20-35) for beginners
+      maxHeight = 45; // Cap at 45 for beginners
+    } else {
+      minHeight = 25 + Math.floor(Math.random() * 20); // Regular min height (25-45)
+      maxHeight = Math.min(75, 40 + Math.floor(score/5) * 5); // Gradual increase, cap at 75
+    }
+    
     const obstacleHeight = minHeight + Math.floor(Math.random() * (maxHeight - minHeight));
     
     // Choose obstacle type - more variety
