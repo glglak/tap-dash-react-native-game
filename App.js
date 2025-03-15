@@ -52,6 +52,10 @@ let milestone10Sound = null;
 // Define game systems
 // Physics System: Handles character movement, gravity, and jumping
 const Physics = (entities, { touches, time, dispatch }) => {
+    if (!entities || !entities.character) {
+        return entities;
+    }
+    
     const character = entities.character;
     
     // Update character Y position based on velocity
@@ -101,6 +105,10 @@ const Physics = (entities, { touches, time, dispatch }) => {
 
 // Obstacle Generator: Creates and moves obstacles
 const ObstacleGenerator = (entities, { time }) => {
+    if (!entities || !entities.world || !entities.character) {
+        return entities;
+    }
+    
     const world = entities.world;
     const character = entities.character;
     const obstacles = Object.keys(entities).filter(key => key.includes('obstacle'));
@@ -110,34 +118,36 @@ const ObstacleGenerator = (entities, { time }) => {
     
     // Move existing obstacles
     obstacles.forEach(obstacleKey => {
-        const obstacle = entities[obstacleKey];
-        
-        // Move obstacle to the left
-        obstacle.position.x -= gameSpeed;
-        
-        // If obstacle is off-screen, remove it
-        if (obstacle.position.x < -OBSTACLE_WIDTH) {
-            delete entities[obstacleKey];
+        if (entities[obstacleKey]) {
+            const obstacle = entities[obstacleKey];
             
-            // Add score when obstacle passes successfully
-            if (!obstacle.passed && !obstacle.hit) {
-                obstacle.passed = true;
-                entities.score = (entities.score || 0) + 1;
+            // Move obstacle to the left
+            obstacle.position.x -= gameSpeed;
+            
+            // If obstacle is off-screen, remove it
+            if (obstacle.position.x < -OBSTACLE_WIDTH) {
+                delete entities[obstacleKey];
                 
-                // Dispatch score event
-                if (entities.dispatch) {
-                    entities.dispatch({ type: 'score' });
+                // Add score when obstacle passes successfully
+                if (!obstacle.passed && !obstacle.hit) {
+                    obstacle.passed = true;
+                    entities.score = (entities.score || 0) + 1;
+                    
+                    // Dispatch score event
+                    if (entities.dispatch) {
+                        entities.dispatch({ type: 'score' });
+                    }
                 }
             }
-        }
-        
-        // Check for collision with character
-        if (!obstacle.hit && checkCollision(character, obstacle)) {
-            obstacle.hit = true;
             
-            // Dispatch game over event
-            if (entities.dispatch) {
-                entities.dispatch({ type: 'game-over' });
+            // Check for collision with character
+            if (!obstacle.hit && checkCollision(character, obstacle)) {
+                obstacle.hit = true;
+                
+                // Dispatch game over event
+                if (entities.dispatch) {
+                    entities.dispatch({ type: 'game-over' });
+                }
             }
         }
     });
@@ -145,8 +155,10 @@ const ObstacleGenerator = (entities, { time }) => {
     // Find the rightmost obstacle to maintain spacing
     let rightmostX = 0;
     obstacles.forEach(obstacleKey => {
-        const obstacle = entities[obstacleKey];
-        rightmostX = Math.max(rightmostX, obstacle.position.x);
+        if (entities[obstacleKey]) {
+            const obstacle = entities[obstacleKey];
+            rightmostX = Math.max(rightmostX, obstacle.position.x);
+        }
     });
     
     // Generate new obstacle with proper spacing
@@ -205,6 +217,10 @@ const ObstacleGenerator = (entities, { time }) => {
 
 // Background System: Changes background based on score
 const BackgroundSystem = (entities, { time }) => {
+    if (!entities || !entities.floor) {
+        return entities;
+    }
+    
     const currentScore = entities.score || 0;
     const backgroundThemeIndex = Math.floor(currentScore / 10) % BACKGROUND_THEMES.length;
     
@@ -224,6 +240,10 @@ const BackgroundSystem = (entities, { time }) => {
 
 // Difficulty System: Adjusts game difficulty based on score
 const DifficultySystem = (entities, { time }) => {
+    if (!entities || !entities.world) {
+        return entities;
+    }
+    
     const currentScore = entities.score || 0;
     
     // Update difficulty level (could be used by other systems)
