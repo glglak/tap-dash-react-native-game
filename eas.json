@@ -9,7 +9,7 @@
         "env": {
           "ANDROID_COMPILE_SDK_VERSION": "34",
           "ANDROID_TARGET_SDK_VERSION": "34",
-          "GRADLE_OPTS": "-Dorg.gradle.jvmargs='-Xmx2048m -XX:MaxMetaspaceSize=512m' -Dorg.gradle.configuration-cache=false"
+          "GRADLE_OPTS": "-Dorg.gradle.jvmargs='-Xmx2048m -XX:MaxMetaspaceSize=512m' -Dorg.gradle.configuration-cache=false -Dorg.gradle.daemon=false -Dorg.gradle.parallel=false -Dorg.gradle.configureondemand=false"
         }
       }
     },
@@ -21,7 +21,7 @@
         "env": {
           "ANDROID_COMPILE_SDK_VERSION": "34",
           "ANDROID_TARGET_SDK_VERSION": "34",
-          "GRADLE_OPTS": "-Dorg.gradle.jvmargs='-Xmx2048m -XX:MaxMetaspaceSize=512m' -Dorg.gradle.configuration-cache=false"
+          "GRADLE_OPTS": "-Dorg.gradle.jvmargs='-Xmx2048m -XX:MaxMetaspaceSize=512m' -Dorg.gradle.configuration-cache=false -Dorg.gradle.daemon=false -Dorg.gradle.parallel=false -Dorg.gradle.configureondemand=false"
         }
       }
     },
@@ -33,7 +33,7 @@
         "env": {
           "ANDROID_COMPILE_SDK_VERSION": "34",
           "ANDROID_TARGET_SDK_VERSION": "34",
-          "GRADLE_OPTS": "-Dorg.gradle.jvmargs='-Xmx2048m -XX:MaxMetaspaceSize=512m' -Dorg.gradle.configuration-cache=false"
+          "GRADLE_OPTS": "-Dorg.gradle.jvmargs='-Xmx4096m -XX:MaxMetaspaceSize=512m' -Dorg.gradle.configuration-cache=false -Dorg.gradle.daemon=false -Dorg.gradle.parallel=false -Dorg.gradle.configureondemand=false"
         }
       }
     }
@@ -49,19 +49,5 @@
   "cli": {
     "appVersionSource": "remote",
     "version": "^15.0.0"
-  },
-  "build-properties": {
-    "android": {
-      "batchSize": 1,
-      "additionalProperties": {
-        "org.gradle.daemon": false,
-        "org.gradle.parallel": false,
-        "org.gradle.jvmargs": "-Xmx4096m",
-        "org.gradle.configureondemand": false
-      }
-    },
-    "ios": {
-      "batchSize": 1
-    }
   }
 }
