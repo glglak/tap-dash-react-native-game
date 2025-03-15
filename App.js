@@ -25,7 +25,7 @@ const INITIAL_GAME_SPEED = 7;
 const MAX_GAME_SPEED = 15;
 const SPEED_INCREASE_RATE = 0.2;
 const MIN_OBSTACLE_SPACING = 250;
-const OBSTACLE_SPACING_VARIATION = 100;
+const OBSTACLE_SPACING_VARIATION = 150; // Increased variation
 
 // Background color themes
 const BACKGROUND_THEMES = [
@@ -43,21 +43,9 @@ let gameOverSound = null;
 let backgroundMusic = null;
 let milestone10Sound = null;
 
-// Define debug function to show character position and size
-const debugCharacter = (character) => {
-  if (!character) return "No character";
-  return `Char: (${Math.round(character.position.x)},${Math.round(character.position.y)}) W:${character.size.width} H:${character.size.height} Jump:${character.isJumping}`;
-};
-
 // Game System that handles everything
 const GameSystem = (entities, { touches, time }) => {
-  if (!entities.character || !entities.world) {
-    console.log("GameSystem: Missing character or world entity!");
-    return entities;
-  }
-  
-  // Log character position for debugging
-  console.log("GameSystem - Character position:", entities.character.position);
+  if (!entities.character || !entities.world) return entities;
   
   const character = entities.character;
   const world = entities.world;
@@ -117,9 +105,6 @@ const GameSystem = (entities, { touches, time }) => {
       }
     }
   }
-  
-  // Update debug info
-  entities.debugInfo = debugCharacter(character);
   
   // 3. OBSTACLE HANDLING
   // Game speed increases with score - faster obstacles
@@ -194,8 +179,8 @@ const GameSystem = (entities, { touches, time }) => {
     // Determine obstacle height - vary based on score
     // Higher score = potentially taller obstacles, but never too tall to jump over
     const minHeight = 30; // Shortest obstacle
-    const maxHeight = Math.min(70, 30 + Math.floor(score/5) * 5); // Increase height every 5 points, cap at 70
-    const obstacleHeight = minHeight + Math.floor(Math.random() * (maxHeight - minHeight) / 5) * 5;
+    const maxHeight = Math.min(80, 30 + Math.floor(score/3) * 5); // Increase height every 3 points, cap at 80
+    const obstacleHeight = minHeight + Math.floor(Math.random() * (maxHeight - minHeight));
     
     // Position it on the ground only
     const obstacleY = SCREEN_HEIGHT - FLOOR_HEIGHT - obstacleHeight/2;
@@ -284,36 +269,6 @@ const playSound = async (sound) => {
   }
 };
 
-// Simple debug renderer that directly renders a view
-const DebugRenderer = (props) => {
-  return (
-    <View style={styles.debugText}>
-      <Text style={{ color: 'white' }}>{props.value}</Text>
-    </View>
-  );
-};
-
-// Standalone CharacterRenderer component - a fallback outside GameEngine
-const StandaloneCharacter = ({x, y, width, height}) => {
-  return (
-    <View
-      style={{
-        position: 'absolute',
-        left: x - width / 2,
-        top: y - height / 2,
-        width: width,
-        height: height,
-        backgroundColor: 'purple',
-        borderWidth: 4,
-        borderColor: 'yellow',
-        zIndex: 9999
-      }}
-    >
-      <Text style={{color: 'white', textAlign: 'center'}}>!!</Text>
-    </View>
-  );
-};
-
 function GameApp() {
   // Game state
   const [running, setRunning] = useState(false);
@@ -321,8 +276,8 @@ function GameApp() {
   const [score, setScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [soundsLoaded, setSoundsLoaded] = useState(false);
-  const [debugInfo, setDebugInfo] = useState("");
-  const [showFallbackChar, setShowFallbackChar] = useState(false);
+  const [entities, setEntities] = useState(null);
+  const entitiesInitialized = useRef(false);
   
   // Use GameContext
   const { 
@@ -356,15 +311,18 @@ function GameApp() {
     }
   }, [score]);
   
+  // Initialize entities once
+  useEffect(() => {
+    if (!entitiesInitialized.current) {
+      setEntities(setupEntities());
+      entitiesInitialized.current = true;
+    }
+  }, []);
+  
   // Setup game entities
   const setupEntities = () => {
-    console.log('Setting up entities with character size:', CHARACTER_SIZE.width, CHARACTER_SIZE.height);
-    
-    // Character position
     const characterX = SCREEN_WIDTH * 0.2;
     const characterY = SCREEN_HEIGHT - FLOOR_HEIGHT - CHARACTER_SIZE.height/2;
-    
-    console.log('Character initial position:', characterX, characterY);
     
     return {
       world: {
@@ -389,9 +347,6 @@ function GameApp() {
         theme: BACKGROUND_THEMES[0],
         renderer: Background
       },
-      // Add a debug info entity
-      debugInfo: "Debug info will appear here",
-      debugInfoRenderer: { renderer: DebugRenderer, value: "Debug info will appear here" },
       score: 0,
       dispatch: (action) => {
         if (gameEngine) {
@@ -401,25 +356,13 @@ function GameApp() {
     };
   };
   
-  // Set a timeout to show fallback character after 2 seconds
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowFallbackChar(true);
-      console.log("Showing fallback character");
-    }, 2000);
-    
-    return () => clearTimeout(timer);
-  }, []);
-  
   // Reset game state for new game
   const resetGame = () => {
     setScore(0);
     setGameOver(false);
     
     if (gameEngine) {
-      const newEntities = setupEntities();
-      console.log("Resetting game with entities:", newEntities);
-      gameEngine.swap(newEntities);
+      gameEngine.swap(setupEntities());
     }
     
     // Start the game
@@ -483,16 +426,11 @@ function GameApp() {
     } else if (e.type === 'jump' || e.type === 'double-jump') {
       // Play jump sound
       playSound(jumpSound);
-      
-      // Update debug information
-      if (gameEngine && gameEngine.entities && gameEngine.entities.debugInfo) {
-        setDebugInfo(gameEngine.entities.debugInfo);
-      }
     }
   };
   
-  // Show loading screen if sounds aren't loaded
-  if (!soundsLoaded) {
+  // Show loading screen if sounds aren't loaded or entities aren't initialized
+  if (!soundsLoaded || !entities) {
     return (
       <View style={styles.container}>
         <Text style={styles.loadingText}>Loading game...</Text>
@@ -505,31 +443,14 @@ function GameApp() {
       <View style={styles.container}>
         <StatusBar hidden={true} />
         
-        {/* Fallback character for testing */}
-        {showFallbackChar && (
-          <StandaloneCharacter 
-            x={SCREEN_WIDTH * 0.2} 
-            y={SCREEN_HEIGHT - FLOOR_HEIGHT - CHARACTER_SIZE.height/2}
-            width={CHARACTER_SIZE.width} 
-            height={CHARACTER_SIZE.height} 
-          />
-        )}
-        
         <GameEngine
           ref={(ref) => { setGameEngine(ref) }}
           style={styles.gameContainer}
           systems={[GameSystem]} 
-          entities={setupEntities()}
+          entities={entities}
           running={running}
           onEvent={onEvent}
         />
-        
-        {/* Debug overlay */}
-        <View style={styles.debugOverlay}>
-          <Text style={styles.debugText}>{debugInfo}</Text>
-          <Text style={styles.debugText}>Screen: {SCREEN_WIDTH}x{SCREEN_HEIGHT}</Text>
-          <Text style={styles.debugText}>Character should be at: {SCREEN_WIDTH * 0.2},{SCREEN_HEIGHT - FLOOR_HEIGHT - CHARACTER_SIZE.height/2}</Text>
-        </View>
         
         {!running && !gameOver && (
           <View style={styles.overlay}>
@@ -598,19 +519,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  debugOverlay: {
-    position: 'absolute',
-    top: 120,
-    left: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    padding: 10,
-    borderRadius: 5,
-    zIndex: 9999, // Make sure it's on top
-  },
-  debugText: {
-    color: 'white',
-    fontSize: 10,
   },
   titleText: {
     fontSize: 48,
