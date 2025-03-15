@@ -1,13 +1,20 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Dimensions } from 'react-native';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 const Background = (props) => {
-  const { position, size } = props;
+  const { position, size, theme } = props;
+  
+  // Use theme colors or default to sky blue and brown
+  const skyColor = theme ? theme.sky : '#87CEEB';
+  const groundColor = theme ? theme.ground : '#8B4513';
   
   return (
     <View style={styles.container}>
       {/* Sky */}
-      <View style={styles.sky} />
+      <View style={[styles.sky, { backgroundColor: skyColor }]} />
       
       {/* Cloud layer - we'll add a few static clouds */}
       <View style={[styles.cloud, { left: '10%', top: '15%' }]} />
@@ -15,11 +22,14 @@ const Background = (props) => {
       <View style={[styles.cloud, { left: '70%', top: '10%' }]} />
       
       {/* Mountains in background */}
-      <View style={styles.mountain1} />
-      <View style={styles.mountain2} />
+      <View style={[styles.mountain1, { borderBottomColor: groundColor }]} />
+      <View style={[styles.mountain2, { borderBottomColor: groundColor }]} />
       
       {/* Sun */}
       <View style={styles.sun} />
+      
+      {/* Ground - this is the actual floor for the game */}
+      <View style={[styles.ground, { backgroundColor: groundColor, height: size.height, top: position.y - size.height / 2 }]} />
     </View>
   );
 };
@@ -29,16 +39,15 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: '#87CEEB', // Sky blue
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT,
   },
   sky: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    height: '60%',
+    height: '100%',
     backgroundColor: '#87CEEB', // Sky blue
   },
   cloud: {
@@ -87,6 +96,12 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     backgroundColor: '#FFD700', // Gold color
   },
+  ground: {
+    position: 'absolute',
+    left: 0,
+    width: SCREEN_WIDTH,
+    backgroundColor: '#8B4513', // Brown ground
+  }
 });
 
 export default Background;
