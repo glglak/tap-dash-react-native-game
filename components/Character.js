@@ -7,11 +7,21 @@ const Character = (props) => {
     return null;
   }
   
-  const { position, size, jumping } = props;
+  const { position, size, jumping, isInvincible } = props;
   
   // Animation state based on jumping - change the appearance when jumping
   const characterStyle = jumping ? styles.jumping : styles.running;
-  const characterColor = jumping ? '#FF6347' : '#FF0000'; // Brighter red when jumping
+  
+  // Determine character color based on state
+  let characterColor = '#FF0000'; // Default red
+  
+  if (isInvincible) {
+    // Rainbow effect for invincibility
+    const hue = (Date.now() / 100) % 360; // Changing hue based on time
+    characterColor = `hsl(${hue}, 100%, 50%)`;
+  } else if (jumping) {
+    characterColor = '#FF6347'; // Brighter red when jumping
+  }
   
   return (
     <View
@@ -26,9 +36,9 @@ const Character = (props) => {
           backgroundColor: characterColor,
           borderRadius: 8,
           borderWidth: 2,
-          borderColor: '#000',
+          borderColor: isInvincible ? 'white' : '#000',
           elevation: 5, // For Android shadow
-          shadowColor: '#000', // For iOS shadow
+          shadowColor: isInvincible ? 'white' : '#000', // For iOS shadow
           shadowOffset: { width: 2, height: 2 },
           shadowOpacity: 0.8,
           shadowRadius: 2,
@@ -36,6 +46,19 @@ const Character = (props) => {
         characterStyle
       ]}
     >
+      {/* Glow effect for invincibility */}
+      {isInvincible && (
+        <View style={[
+          styles.invincibilityGlow,
+          {
+            width: size.width * 1.5,
+            height: size.height * 1.5,
+            left: -size.width * 0.25,
+            top: -size.height * 0.25,
+          }
+        ]} />
+      )}
+      
       {/* Character face - simple representation */}
       <View style={styles.eye} />
       <View style={[styles.eye, { left: 30 }]} />
@@ -67,6 +90,17 @@ const styles = StyleSheet.create({
   },
   jumping: {
     transform: [{ rotate: '-5deg' }]
+  },
+  invincibilityGlow: {
+    position: 'absolute',
+    borderRadius: 50,
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+    shadowColor: 'white',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 10,
   },
   eye: {
     position: 'absolute',
