@@ -15,16 +15,16 @@ import Background from './components/Background';
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
-// Game constants - SIGNIFICANTLY INCREASED SPEEDS
-const GRAVITY = 1.2; // Increased gravity for faster falling
-const JUMP_FORCE = -18; // Stronger jump
-const CHARACTER_SIZE = { width: 50, height: 50 };
+// Game constants - ADJUSTED FOR BETTER PLAYABILITY
+const GRAVITY = 1.0; // Reduced gravity
+const JUMP_FORCE = -16; // Less strong jump
+const CHARACTER_SIZE = { width: 60, height: 60 }; // Larger character for visibility
 const FLOOR_HEIGHT = 50;
-const OBSTACLE_WIDTH = 30;
-const INITIAL_GAME_SPEED = 12; // Even higher initial speed
-const MAX_GAME_SPEED = 25; // Higher max speed
-const SPEED_INCREASE_RATE = 0.4; // Faster speed increase
-const MIN_OBSTACLE_SPACING = 180; // Shorter minimum spacing
+const OBSTACLE_WIDTH = 40; // Wider obstacles for visibility
+const INITIAL_GAME_SPEED = 7; // Reduced initial speed
+const MAX_GAME_SPEED = 15; // Reduced max speed
+const SPEED_INCREASE_RATE = 0.2; // Slower speed increase
+const MIN_OBSTACLE_SPACING = 250; // More spacing between obstacles
 const OBSTACLE_SPACING_VARIATION = 100; // Less variation for more frequent obstacles
 
 // Background color themes - simplified for performance
@@ -166,12 +166,12 @@ const GameSystem = (entities, { touches, time }) => {
   
   // Generate new obstacle with proper spacing
   const minimumSpawnX = obstacles.length === 0 ? 
-    world.width + 50 : // Start closer to the screen edge
+    world.width + 100 : // Start further from the screen edge
     rightmostX + MIN_OBSTACLE_SPACING + Math.random() * OBSTACLE_SPACING_VARIATION;
   
   // Only generate if it's time (based on spacing and speed)
   if ((world.lastObstacleTime === undefined || 
-       time.current - world.lastObstacleTime > 500) && // Force minimum time between obstacles
+       time.current - world.lastObstacleTime > 800) && // Longer time between obstacles
       rightmostX < minimumSpawnX - MIN_OBSTACLE_SPACING) {
     
     // Spawn obstacle
@@ -320,9 +320,9 @@ function GameApp() {
         difficultyLevel: 1
       },
       character: {
-        position: { x: SCREEN_WIDTH * 0.2, y: SCREEN_HEIGHT - FLOOR_HEIGHT - 25 },
+        position: { x: SCREEN_WIDTH * 0.2, y: SCREEN_HEIGHT - FLOOR_HEIGHT - CHARACTER_SIZE.height/2 },
         velocity: { x: 0, y: 0 },
-        size: { width: 50, height: 50 },
+        size: CHARACTER_SIZE,
         isJumping: false,
         doubleJumpAvailable: true,
         jumping: false,
