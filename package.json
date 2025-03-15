@@ -32,6 +32,8 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "prebuild": "node ./patch-gradle.js",
-    "eas-build-pre-install": "node ./patch-gradle.js"
+    "preinstall": "node ./react-native-gradle-plugin-patch.js",
+    "postinstall": "node ./react-native-gradle-plugin-patch.js",
+    "eas-build-pre-install": "node ./react-native-gradle-plugin-patch.js"
   }
 }
