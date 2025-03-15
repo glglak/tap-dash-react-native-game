@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 
-// Lightweight Character Component - stripped down for better performance
+// Improved Character Component - more visible but still lightweight
 const Character = (props) => {
   if (!props || !props.position || !props.size) {
     return null;
@@ -9,10 +9,9 @@ const Character = (props) => {
   
   const { position, size, jumping } = props;
   
-  // Simple color change based on jumping state
-  const characterColor = jumping ? '#FF6347' : '#FF0000';
+  // Bright colors for visibility
+  const characterColor = jumping ? '#FF0000' : '#FF0000'; // Always bright red
   
-  // Very simplified character - just a single colored rectangle with minimal styling
   return (
     <View
       style={{
@@ -23,11 +22,41 @@ const Character = (props) => {
         height: size.height,
         backgroundColor: characterColor,
         borderRadius: 8,
-        borderWidth: 2,
+        borderWidth: 3, // Thicker border for visibility
         borderColor: '#000',
-        transform: jumping ? [{ rotate: '-5deg' }] : []
+        // Simple face to make it more visible
+        alignItems: 'center',
+        justifyContent: 'center',
       }}
-    />
+    >
+      {/* Simple eyes */}
+      <View style={{
+        width: size.width * 0.7,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+      }}>
+        <View style={{
+          width: 10,
+          height: 10,
+          backgroundColor: 'white',
+          borderRadius: 5,
+        }} />
+        <View style={{
+          width: 10,
+          height: 10,
+          backgroundColor: 'white',
+          borderRadius: 5,
+        }} />
+      </View>
+      
+      {/* Simple mouth */}
+      <View style={{
+        marginTop: 5,
+        width: size.width * 0.5,
+        height: 3,
+        backgroundColor: 'white',
+      }} />
+    </View>
   );
 };
 
