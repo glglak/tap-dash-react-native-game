@@ -6,7 +6,7 @@ import { Audio } from 'expo-av';
 // Import GameContext
 import { GameProvider, useGame } from './src/contexts/GameContext';
 
-// Import game components - remove Coin and PowerUp for now until we create them
+// Import game components
 import Character from './components/Character';
 import Obstacle from './components/Obstacle';
 import Background from './components/Background';
@@ -15,17 +15,17 @@ import Background from './components/Background';
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
-// Game constants
-const GRAVITY = 0.8;
-const JUMP_FORCE = -15;
+// Game constants - SIGNIFICANTLY INCREASED SPEEDS
+const GRAVITY = 1.2; // Increased gravity for faster falling
+const JUMP_FORCE = -18; // Stronger jump
 const CHARACTER_SIZE = { width: 50, height: 50 };
 const FLOOR_HEIGHT = 50;
 const OBSTACLE_WIDTH = 30;
-const INITIAL_GAME_SPEED = 5;
-const MAX_GAME_SPEED = 15; // Increased max speed
-const SPEED_INCREASE_RATE = 0.2; // Increased speed increase rate
-const MIN_OBSTACLE_SPACING = 300;
-const OBSTACLE_SPACING_VARIATION = 150;
+const INITIAL_GAME_SPEED = 10; // Start with higher speed
+const MAX_GAME_SPEED = 20; // Much higher max speed
+const SPEED_INCREASE_RATE = 0.3; // Faster speed increase
+const MIN_OBSTACLE_SPACING = 200; // Shorter minimum spacing
+const OBSTACLE_SPACING_VARIATION = 100; // Less variation for more frequent obstacles
 
 // Background color themes
 const BACKGROUND_THEMES = [
@@ -35,12 +35,6 @@ const BACKGROUND_THEMES = [
   { sky: '#7CFC00', ground: '#006400' }, // Alien planet theme
   { sky: '#FFD700', ground: '#CD853F' }, // Desert theme
 ];
-
-// Obstacle types
-const OBSTACLE_TYPES = {
-  GROUND: 'ground',
-  AIR: 'air'
-};
 
 // Sound objects
 let jumpSound = null;
@@ -174,7 +168,7 @@ const ObstacleGenerator = (entities, { time }) => {
   
   // Generate new obstacle with proper spacing
   const minimumSpawnX = obstacles.length === 0 ? 
-    world.width + 100 : 
+    world.width + 50 : // Start closer to the screen edge
     rightmostX + MIN_OBSTACLE_SPACING + Math.random() * OBSTACLE_SPACING_VARIATION;
   
   // Only generate if it's time (based on spacing and speed)
@@ -182,19 +176,14 @@ const ObstacleGenerator = (entities, { time }) => {
     // Spawn obstacle
     const obstacleId = `obstacle-${Date.now()}`;
     
-    // Determine obstacle type: ground or air
-    const obstacleType = Math.random() < 0.3 ? OBSTACLE_TYPES.AIR : OBSTACLE_TYPES.GROUND;
+    // Determine obstacle height - vary based on score
+    // Higher score = potentially taller obstacles, but never too tall to jump over
+    const minHeight = 30; // Shortest obstacle
+    const maxHeight = Math.min(70, 30 + score); // Max height increases with score, caps at 70
+    const obstacleHeight = minHeight + Math.random() * (maxHeight - minHeight);
     
-    // Determine obstacle height and position
-    let obstacleHeight, obstacleY;
-    
-    if (obstacleType === OBSTACLE_TYPES.GROUND) {
-      obstacleHeight = 50;
-      obstacleY = SCREEN_HEIGHT - FLOOR_HEIGHT - obstacleHeight/2;
-    } else {
-      obstacleHeight = 40;
-      obstacleY = character.size.height + obstacleHeight/2 + 20;
-    }
+    // Position it on the ground only
+    const obstacleY = SCREEN_HEIGHT - FLOOR_HEIGHT - obstacleHeight/2;
     
     // Add new obstacle
     entities[obstacleId] = {
@@ -203,7 +192,7 @@ const ObstacleGenerator = (entities, { time }) => {
         y: obstacleY
       },
       size: { width: OBSTACLE_WIDTH, height: obstacleHeight },
-      type: obstacleType,
+      type: 'ground', // Only ground obstacles
       hit: false,
       passed: false,
       renderer: Obstacle
@@ -501,6 +490,7 @@ function GameApp() {
             <View style={styles.instructionsContainer}>
               <Text style={styles.instructionText}>• Tap to jump over obstacles</Text>
               <Text style={styles.instructionText}>• Double tap for a second jump in the air</Text>
+              <Text style={styles.instructionText}>• Game gets faster as you score!</Text>
               <Text style={styles.instructionText}>• Every 10 points changes the background!</Text>
             </View>
             {highScore > 0 && (
