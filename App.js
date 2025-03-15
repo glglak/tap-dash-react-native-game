@@ -43,6 +43,7 @@ let scoreSound = null;
 let gameOverSound = null;
 let backgroundMusic = null;
 let milestone10Sound = null;
+let wesopesoSound = null;
 
 // Game System that handles everything
 const GameSystem = (entities, { touches, time, dispatch }) => {
@@ -289,6 +290,16 @@ const loadSounds = async () => {
       require('./assets/sounds/milestone5.mp3')
     );
     milestone10Sound = milestone;
+    
+    // Load the wesopeso sound for 30, 40, 50 points
+    try {
+      const { sound: wesopeso } = await Audio.Sound.createAsync(
+        require('./assets/sounds/wesopeso.mp3')
+      );
+      wesopesoSound = wesopeso;
+    } catch (error) {
+      console.log("Error loading wesopeso sound, will fallback to milestone sound:", error);
+    }
   } catch (error) {
     console.log("Error loading sounds:", error);
   }
@@ -336,6 +347,7 @@ function GameApp() {
       if (scoreSound) scoreSound.unloadAsync();
       if (gameOverSound) gameOverSound.unloadAsync();
       if (milestone10Sound) milestone10Sound.unloadAsync();
+      if (wesopesoSound) wesopesoSound.unloadAsync();
     };
   }, []);
 
@@ -441,10 +453,24 @@ function GameApp() {
       // Play normal score sound
       playSound(scoreSound);
       
-      // Check if we hit exactly a multiple of 10 - play special milestone sound
+      // Check if we hit exactly a multiple of 10 - play milestone music
       if (newScore > 0 && newScore % 10 === 0) {
-        // Play special milestone sound
-        playSound(milestone10Sound);
+        // Play different sounds based on the score milestone:
+        // - For scores 30, 40, 50, etc. play wesopeso
+        // - For scores 10, 20, etc. play milestone5
+        
+        if (newScore >= 30 && newScore % 10 === 0) {
+          // Play wesopeso sound at 30, 40, 50, etc. (if available)
+          if (wesopesoSound) {
+            playSound(wesopesoSound);
+          } else {
+            // Fallback to milestone sound if wesopeso isn't available
+            playSound(milestone10Sound);
+          }
+        } else {
+          // Play regular milestone sound at 10, 20
+          playSound(milestone10Sound);
+        }
         
         // Add additional feedback for milestone
         Vibration.vibrate([0, 100, 50, 100, 50, 100]);
