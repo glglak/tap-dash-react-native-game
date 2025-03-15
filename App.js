@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, TouchableWithoutFeedback, Dimensions, StatusBar, Vibration } from 'react-native';
+import { StyleSheet, View, Text, TouchableWithoutFeedback, Dimensions, StatusBar, Vibration, TouchableOpacity } from 'react-native';
 import { GameEngine } from 'react-native-game-engine';
 import { Audio } from 'expo-av';
 
@@ -318,6 +318,7 @@ function GameApp() {
     highScore, 
     updateGameStats, 
     coins,
+    shareScore
   } = useGame();
   
   // Load sounds on component mount
@@ -462,6 +463,13 @@ function GameApp() {
     }
   };
   
+  // Handle share button press
+  const handleShare = () => {
+    // Use the score from the current game, not the high score
+    shareScore(score);
+    Vibration.vibrate(50);
+  };
+  
   // Show loading screen if sounds aren't loaded or entities aren't initialized
   if (!soundsLoaded || !entities) {
     return (
@@ -509,6 +517,16 @@ function GameApp() {
               <Text style={styles.newHighScoreText}>New High Score!</Text>
             )}
             <Text style={styles.highScoreText}>High Score: {highScore}</Text>
+            
+            {/* Share Button */}
+            <TouchableOpacity 
+              style={styles.shareButton}
+              onPress={handleShare}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.shareButtonText}>📱 Share Score</Text>
+            </TouchableOpacity>
+            
             <Text style={styles.restartText}>Tap to Restart</Text>
           </View>
         )}
@@ -605,6 +623,24 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: '#fff',
     marginBottom: 30,
+  },
+  shareButton: {
+    backgroundColor: '#4267B2', // Facebook blue
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 25,
+    marginBottom: 25,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  shareButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
   restartText: {
     fontSize: 20,
