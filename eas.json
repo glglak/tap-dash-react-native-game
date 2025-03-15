@@ -5,9 +5,14 @@
         "buildType": "apk"
       }
     },
+	"cli": {
+    "appVersionSource": "remote"
+  },
     "production": {
       "android": {
-        "buildType": "app-bundle"
+        "buildType": "app-bundle",
+		"autoIncrement": true
+
       }
     }
   }
