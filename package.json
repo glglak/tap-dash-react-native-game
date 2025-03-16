@@ -40,6 +40,7 @@
     "build": "npx eas-cli build --platform android --profile production",
     "build:preview": "npx eas-cli build --platform android --profile preview",
     "build:dev": "npx eas-cli build --platform android --profile development",
+    "build:googleplay": "npx eas-cli build --platform android --profile googleplay --clear-cache",
     "build:submit": "npx eas-cli build --platform android --profile production --auto-submit",
     "build:docker": "node ./docker-build.js",
     "build:docker-apk": "node ./docker-build.js --apk",
