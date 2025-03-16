@@ -55,6 +55,12 @@ if %FOUND_JAVA% EQU 0 (
 echo Setting JAVA_HOME to: %JAVA_HOME%
 echo.
 
+REM Get Java version
+"%JAVA_HOME%\bin\java" -version 2>nul
+if %ERRORLEVEL% NEQ 0 (
+  echo Warning: Unable to determine Java version
+)
+
 REM Determine build type based on arguments
 set BUILD_TYPE=bundleRelease
 set BUILD_NAME=AAB file for Google Play
@@ -77,10 +83,14 @@ echo Cleaning previous build artifacts...
 if exist android\app\build rmdir /s /q android\app\build
 echo.
 
-REM Navigate to android directory and run the build
-echo Running Gradle build command...
+REM Set additional environment variables to help with Java compatibility
+set JAVA_OPTS=--add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED
+set GRADLE_OPTS=-Dorg.gradle.jvmargs="-Xmx2048m -XX:MaxMetaspaceSize=512m --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED"
+
+REM Navigate to android directory and run the build with compatibility flags
+echo Running Gradle build command with Java compatibility flags...
 cd android
-call gradlew.bat :app:%BUILD_TYPE% --no-daemon
+call gradlew.bat :app:%BUILD_TYPE% --no-daemon --stacktrace
 set BUILD_RESULT=%ERRORLEVEL%
 cd ..
 
