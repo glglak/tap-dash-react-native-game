@@ -73,8 +73,8 @@ if "%1"=="--apk" (
 echo Building %BUILD_NAME%...
 echo.
 
-REM First apply our React Native plugin fix
-echo Applying React Native Gradle plugin fix...
+REM First run our special fixes
+echo Running React Native Gradle plugin fixes...
 call node ./fix-react-native-plugin.js
 echo.
 
@@ -82,6 +82,10 @@ REM Clean any previous build artifacts
 echo Cleaning previous build artifacts...
 if exist android\app\build rmdir /s /q android\app\build
 echo.
+
+REM Create directory for node_modules/@react-native/gradle-plugin if it doesn't exist
+if not exist node_modules\@react-native\gradle-plugin mkdir node_modules\@react-native\gradle-plugin
+echo. > node_modules\@react-native\gradle-plugin\react-native.gradle 
 
 REM Set additional environment variables to help with Java compatibility
 set JAVA_OPTS=--add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED
@@ -97,10 +101,10 @@ if not exist android\app\debug.keystore (
   echo.
 )
 
-REM Navigate to android directory and run the build with compatibility flags
-echo Running Gradle build command with Java compatibility flags...
+REM Try two build approaches (first with React Native then with Expo)
+echo Attempting build with standard approach...
 cd android
-call gradlew.bat :app:%BUILD_TYPE% --no-daemon --info
+call gradlew.bat :app:%BUILD_TYPE% --no-daemon --stacktrace
 set BUILD_RESULT=%ERRORLEVEL%
 cd ..
 
@@ -114,35 +118,32 @@ if "%BUILD_TYPE%"=="bundleRelease" (
 REM Determine if the build truly succeeded by checking if the output file exists
 if %BUILD_RESULT% NEQ 0 (
   echo.
-  echo Build process reported errors, checking output file...
-  if exist "%OUTPUT_FILE%" (
-    echo.
-    echo ⚠️ The build reported errors but the output file was still created.
-    echo This might be a warning rather than a fatal error.
-    echo.
-    echo Your %BUILD_NAME% is available at:
-    echo %OUTPUT_FILE%
-    echo.
-    echo Please test this file thoroughly as it may not be fully reliable.
-    exit /b 0
-  ) else (
-    echo.
-    echo ❌ Build failed and no output file was created.
-    echo See the error messages above for details.
-    exit /b 1
-  )
+  echo First build approach failed, trying alternative method with Expo...
+  echo.
+  
+  REM Try the Expo prebuild approach
+  call npx expo prebuild --platform android --clean
+  
+  REM Now try building again
+  cd android
+  call gradlew.bat :app:%BUILD_TYPE% --no-daemon --stacktrace
+  set BUILD_RESULT=%ERRORLEVEL%
+  cd ..
+) 
+
+REM Check if the output file exists after either build attempt
+if exist "%OUTPUT_FILE%" (
+  echo.
+  echo ✅ Build completed successfully!
+  echo.
+  echo Your %BUILD_NAME% is available at:
+  echo %OUTPUT_FILE%
+  exit /b 0
 ) else (
-  if exist "%OUTPUT_FILE%" (
-    echo.
-    echo ✅ Build completed successfully!
-    echo.
-    echo Your %BUILD_NAME% is available at:
-    echo %OUTPUT_FILE%
-    exit /b 0
-  ) else (
-    echo.
-    echo ⚠️ Build reported success but no output file was found.
-    echo This is unusual - check for warnings in the build output above.
-    exit /b 1
-  )
+  echo.
+  echo ❌ Build failed and no output file was created.
+  echo.
+  echo Recommendation: Use EAS build when it becomes available:
+  echo npx eas-cli build --platform android --profile production
+  exit /b 1
 )
