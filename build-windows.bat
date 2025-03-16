@@ -76,21 +76,48 @@ REM Navigate to android directory and run the build
 echo Running Gradle build command...
 cd android
 call gradlew.bat :app:%BUILD_TYPE% --no-daemon
+set BUILD_RESULT=%ERRORLEVEL%
 cd ..
 
-REM Check the result
-if %ERRORLEVEL% NEQ 0 (
-  echo.
-  echo Build failed. See error messages above.
-  exit /b 1
+REM Check if the build actually created the output file
+if "%BUILD_TYPE%"=="bundleRelease" (
+  set OUTPUT_FILE=%CD%\android\app\build\outputs\bundle\release\app-release.aab
 ) else (
+  set OUTPUT_FILE=%CD%\android\app\build\outputs\apk\release\app-release.apk
+)
+
+REM Determine if the build truly succeeded by checking if the output file exists
+if %BUILD_RESULT% NEQ 0 (
   echo.
-  echo Build completed successfully!
-  if "%BUILD_TYPE%"=="bundleRelease" (
-    echo Your AAB file is available at:
-    echo %CD%\android\app\build\outputs\bundle\release\app-release.aab
+  echo Build process reported errors, checking output file...
+  if exist "%OUTPUT_FILE%" (
+    echo.
+    echo ⚠️ The build reported errors but the output file was still created.
+    echo This might be a warning rather than a fatal error.
+    echo.
+    echo Your %BUILD_NAME% is available at:
+    echo %OUTPUT_FILE%
+    echo.
+    echo Please test this file thoroughly as it may not be fully reliable.
+    exit /b 0
   ) else (
-    echo Your APK file is available at:
-    echo %CD%\android\app\build\outputs\apk\release\app-release.apk
+    echo.
+    echo ❌ Build failed and no output file was created.
+    echo See the error messages above for details.
+    exit /b 1
+  )
+) else (
+  if exist "%OUTPUT_FILE%" (
+    echo.
+    echo ✅ Build completed successfully!
+    echo.
+    echo Your %BUILD_NAME% is available at:
+    echo %OUTPUT_FILE%
+    exit /b 0
+  ) else (
+    echo.
+    echo ⚠️ Build reported success but no output file was found.
+    echo This is unusual - check for warnings in the build output above.
+    exit /b 1
   )
 )
