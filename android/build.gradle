@@ -39,3 +39,33 @@ allprojects {
         maven { url 'https://www.jitpack.io' }
     }
 }
+
+// This patch fixes the "Unresolved reference: getModule" error
+allprojects {
+    configurations.all {
+        resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+            if (details.requested.group == 'com.android.tools.build' && details.requested.name == 'gradle') {
+                details.useVersion '8.0.0'
+            }
+        }
+    }
+}
+
+// Add this to your settings.gradle to apply our plugin fix
+gradle.beforeProject { project ->
+    if (project.name == 'react-native-gradle-plugin') {
+        project.buildscript {
+            doLast {
+                def pluginBuildFile = project.file('build.gradle.kts')
+                if (pluginBuildFile.exists()) {
+                    def content = pluginBuildFile.text
+                    if (content.contains(".getModule(")) {
+                        def patched = content.replaceAll(/(\.(get|findByName|getByName)\([^)]+\))\.getModule\("([^"]+)"\)/, '$1.module("$2")')
+                        pluginBuildFile.text = patched
+                        println "Patched React Native Gradle plugin build file to fix getModule reference"
+                    }
+                }
+            }
+        }
+    }
+}
