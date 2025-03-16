@@ -1,0 +1,2 @@
+# This file ensures the android directory is included in git
+# Delete this file after running 'npx expo prebuild --platform android'

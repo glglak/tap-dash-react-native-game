@@ -2,72 +2,76 @@
 
 A simple and addictive endless runner game where you tap to jump over obstacles.
 
-## Building the Game
+## Important Build Instructions
 
-There are several ways to build this app. Choose the method that works best for you:
+### First Time Setup 
 
-### Option 1: Use the Simplified Build Script (Recommended)
-
-```bash
-# Install dependencies first
-npm install
-
-# Run the build script (for production build)
-npm run build
-
-# For a preview build (APK for testing)
-npm run build:preview
-
-# For a development build
-npm run build:dev
-```
-
-### Option 2: Direct EAS Commands
-
-If you prefer to use EAS commands directly:
+Before building for the first time:
 
 ```bash
-# Make sure you have the right EAS CLI version
+# Make sure you have the latest CLI tools
+npm install -g expo-cli@latest
+npm install -g eas-cli@latest
+
+# Install dependencies
 npm install
 
-# Then run the build
-npx eas-cli build --platform android --profile production --clear-cache
+# Generate Android native code (critical step!)
+npx expo prebuild --platform android
+
+# Make gradlew executable
+chmod +x android/gradlew  # Linux/Mac
+# or
+attrib -R android\gradlew  # Windows
 ```
 
-### Troubleshooting Build Issues
+### Building Options
 
-If you encounter errors:
+#### Option 1: Build locally (recommended)
 
-1. **Clean your environment**:
-   ```bash
-   npm run clean
-   ```
+Use the included scripts to build locally:
 
-2. **Make sure gradlew is executable**:
-   ```bash
-   npm run prepare-gradlew
-   ```
+**Linux/Mac:**
+```bash
+# Make the script executable
+chmod +x local-build-check.sh
+./local-build-check.sh
+```
 
-3. **Try with a specific EAS CLI version**:
-   ```bash
-   npm install --save-dev eas-cli@3.13.3
-   ```
+**Windows:**
+```
+local-build.bat
+```
 
-4. **Use a minimal EAS configuration**:
-   If you're still seeing errors with `eas.json`, try:
-   ```bash
-   npx eas-cli build --platform android
-   ```
+These scripts guide you through the build process and create:
+- Debug APK: `android/app/build/outputs/apk/debug/app-debug.apk`
+- Release APK: `android/app/build/outputs/apk/release/app-release.apk`
+- App Bundle: `android/app/build/outputs/bundle/release/app-release.aab`
 
-## Running the Game Locally
+#### Option 2: Build with EAS (requires Expo account)
 
-To run the game in development mode:
+```bash
+# Make sure prebuild is done first!
+npx expo prebuild --platform android
+
+# Then use EAS Build
+npx eas-cli build --platform android --profile preview
+# or
+npx eas-cli build --platform android --profile production
+```
+
+### Troubleshooting
+
+If you get `no such file or directory, open '/home/expo/workingdir/build/android/gradlew'` error:
+1. Make sure you ran `npx expo prebuild --platform android` first
+2. Try building locally instead of with EAS
+3. Check your environment with `./local-build-check.sh`
+
+## Running the Game
 
 ```bash
 npm start
 ```
-
-This will start the Expo development server, allowing you to run the app on a connected device or emulator.
 
 ## Technology Stack
 
@@ -79,7 +83,3 @@ This will start the Expo development server, allowing you to run the app on a co
 ## Gameplay
 
 Tap to make your character jump over obstacles. See how far you can go!
-
-## Credits
-
-Game created by glglak.
