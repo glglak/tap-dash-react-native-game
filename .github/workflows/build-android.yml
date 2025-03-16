@@ -74,16 +74,30 @@ jobs:
           cd android
           ./gradlew assembleRelease --no-daemon
 
+      - name: List build outputs (AAB)
+        if: ${{ github.event.inputs.build_type == 'aab' }}
+        run: |
+          ls -la android/app/build/outputs/bundle/release/
+
+      - name: List build outputs (APK)
+        if: ${{ github.event.inputs.build_type == 'apk' }}
+        run: |
+          ls -la android/app/build/outputs/apk/release/
+
+      # Using a different version of upload-artifact
       - name: Upload AAB
         if: ${{ github.event.inputs.build_type == 'aab' }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v2
         with:
           name: app-release-bundle
           path: android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 7
 
+      # Using a different version of upload-artifact
       - name: Upload APK
         if: ${{ github.event.inputs.build_type == 'apk' }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v2
         with:
           name: app-release-apk
           path: android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 7
