@@ -3,13 +3,12 @@ rootProject.name = 'tapdash'
 apply from: new File(["node", "--print", "require.resolve('expo/package.json')"].execute(null, rootDir).text.trim(), "../scripts/autolinking.gradle");
 useExpoModules()
 
-// Standard React Native configuration
-apply from: new File(["node", "--print", "require.resolve('@react-native/gradle-plugin/package.json', { paths: [require.resolve('react-native/package.json')] })"].execute(null, rootDir).text.trim(), "../react-native.gradle");
+// Add React Native as an included build
+include ':app'
+includeBuild('../node_modules/react-native/android')
+includeBuild('../node_modules/@react-native/gradle-plugin')
 
 // Load custom settings later to allow overrides
 if (new File(rootProject.projectDir, "settings.local.gradle").exists()) {
     apply from: 'settings.local.gradle'
 }
-
-include ':app'
-includeBuild('../node_modules/@react-native/gradle-plugin')
