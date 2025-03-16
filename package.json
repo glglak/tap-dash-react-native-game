@@ -41,6 +41,8 @@
     "build:preview": "npx eas-cli build --platform android --profile preview",
     "build:dev": "npx eas-cli build --platform android --profile development",
     "build:submit": "npx eas-cli build --platform android --profile production --auto-submit",
+    "build:docker": "node ./docker-build.js",
+    "build:docker-apk": "node ./docker-build.js --apk",
     "clean": "rm -rf node_modules && npm install"
   }
 }
