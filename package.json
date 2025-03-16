@@ -37,9 +37,10 @@
     "web": "npx expo start --web",
     "postinstall": "node ./gradle-plugin-patch.js",
     "prepare-gradlew": "cd android && chmod +x ./gradlew",
-    "build": "node ./build-app.js",
-    "build:preview": "node ./build-app.js --preview",
-    "build:dev": "node ./build-app.js --dev",
+    "build": "npx eas-cli build --platform android --profile production",
+    "build:preview": "npx eas-cli build --platform android --profile preview",
+    "build:dev": "npx eas-cli build --platform android --profile development",
+    "build:submit": "npx eas-cli build --platform android --profile production --auto-submit",
     "clean": "rm -rf node_modules && npm install"
   }
 }
