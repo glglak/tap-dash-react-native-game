@@ -67,9 +67,14 @@ if "%1"=="--apk" (
 echo Building %BUILD_NAME%...
 echo.
 
-REM Run the Gradle patch first
-echo Running Gradle plugin patch...
-call node ./gradle-plugin-patch.js
+REM First apply the Gradle plugin fix
+echo Applying direct fix for the React Native Gradle plugin...
+call node ./fix-gradle-plugin.js
+echo.
+
+REM Clean any previous build artifacts
+echo Cleaning previous build artifacts...
+if exist android\app\build rmdir /s /q android\app\build
 echo.
 
 REM Navigate to android directory and run the build
