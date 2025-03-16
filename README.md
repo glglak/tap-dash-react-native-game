@@ -1,104 +1,85 @@
-# Tap Dash React Native Game
+# Tap Dash Game
 
 A simple and addictive endless runner game where you tap to jump over obstacles.
 
-## Fixed Issues
+## Building the Game
 
-Recent fixes have addressed:
-- Fixed package version mismatches (expo-haptics and expo-sharing were for Expo SDK 50 but we're using SDK 49)
-- Added proper `index.js` that registers the main component
-- Resolved issues with Expo native modules
-- Implemented inline game systems to reduce import complexity
-- Added proper babel and metro configuration
+There are several ways to build this app. Choose the method that works best for you:
 
-## Game Features
+### Option 1: Use the Simplified Build Script (Recommended)
 
-- Simple tap controls
-- Double jump mechanics
-- Progressive difficulty
-- High score tracking
-- Sound effects and background music
-- Haptic feedback
-
-## How to Play
-
-- Tap to jump over obstacles
-- Hold for a higher jump
-- Double tap for a double jump
-- Every 5 points gives a special bonus!
-
-## Development Setup
-
-1. Install dependencies:
-```
+```bash
+# Install dependencies first
 npm install
+
+# Run the build script (for production build)
+npm run build
+
+# For a preview build (APK for testing)
+npm run build:preview
+
+# For a development build
+npm run build:dev
 ```
 
-2. Clean your development environment:
-```
-rm -rf node_modules
-npm cache clean --force
+### Option 2: Direct EAS Commands
+
+If you prefer to use EAS commands directly:
+
+```bash
+# Make sure you have the right EAS CLI version
 npm install
+
+# Then run the build
+npx eas-cli build --platform android --profile production --clear-cache
 ```
 
-3. Start the development server with a clean slate:
+### Troubleshooting Build Issues
+
+If you encounter errors:
+
+1. **Clean your environment**:
+   ```bash
+   npm run clean
+   ```
+
+2. **Make sure gradlew is executable**:
+   ```bash
+   npm run prepare-gradlew
+   ```
+
+3. **Try with a specific EAS CLI version**:
+   ```bash
+   npm install --save-dev eas-cli@3.13.3
+   ```
+
+4. **Use a minimal EAS configuration**:
+   If you're still seeing errors with `eas.json`, try:
+   ```bash
+   npx eas-cli build --platform android
+   ```
+
+## Running the Game Locally
+
+To run the game in development mode:
+
+```bash
+npm start
 ```
-npx expo start --clear
-```
 
-4. Run on simulator or device:
-   - Press `i` for iOS simulator
-   - Press `a` for Android simulator
-   - Scan QR code with Expo Go app for physical device
+This will start the Expo development server, allowing you to run the app on a connected device or emulator.
 
-## Troubleshooting
-
-### If you encounter the "requireOptionalNativeModule is not a function" error:
-
-This is typically caused by incompatible package versions with your Expo SDK. This project uses Expo SDK 49 and requires these specific versions:
-
-```
-"expo-haptics": "~12.4.0",
-"expo-sharing": "~11.5.0",
-```
-
-If you're upgrading or changing packages, make sure they're compatible with your Expo SDK version.
-
-### For general "main has not been registered" errors:
-
-1. **Complete Reset** (Most Effective):
-   ```
-   rm -rf node_modules/
-   npm cache clean --force
-   npm install
-   npx expo start --clear
-   ```
-
-2. **Delete Metro Cache**:
-   ```
-   rm -rf $TMPDIR/metro-*
-   ```
-
-3. **Make sure you're in the correct directory**:
-   Verify you're running the Metro bundler from the project's root directory.
-
-4. **Reinstall Expo CLI**:
-   ```
-   npm uninstall -g expo-cli
-   npm install -g expo-cli
-   ```
-
-## Assets
-
-Place sound files in `assets/sounds/` directory:
-- background.mp3
-- jump.mp3
-- score.mp3
-- game-over.mp3
-- milestone5.mp3
-
-## Technologies Used
+## Technology Stack
 
 - React Native
-- Expo SDK 49
+- Expo
+- Matter.js (Physics)
 - React Native Game Engine
+
+## Gameplay
+
+Tap to make your character jump over obstacles. See how far you can go!
+
+## Credits
+
+Game created by glglak.
