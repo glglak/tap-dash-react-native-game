@@ -12,10 +12,11 @@ The simplest option that doesn't require EAS build quota or local setup:
 
 1. Go to your GitHub repository: https://github.com/glglak/tap-dash-react-native-game
 2. Click on the "Actions" tab
-3. Select the "Build Android App" workflow
+3. Select the "Simple Android Build" workflow
 4. Click "Run workflow" and select your build type (aab or apk)
 5. Wait for the build to complete (typically 5-10 minutes)
-6. Download your build artifacts
+6. Once completed, click on the workflow run
+7. Download your build artifact named "android-build"
 
 This option is completely free and runs in GitHub's cloud.
 
@@ -43,18 +44,6 @@ npm run build:preview
 npm run build
 ```
 
-### Option 4: Docker-based Build (Requires Docker)
-
-If you have Docker properly configured:
-
-```bash
-# Build AAB file for Google Play submission
-npm run build:docker
-
-# Or build APK file for direct installation
-npm run build:docker-apk
-```
-
 ## Troubleshooting
 
 If you encounter build issues:
@@ -73,9 +62,14 @@ To start the development server:
 npm start
 ```
 
-## File Structure
+## GitHub Actions Build Notes
 
-- `App.js` - Main entry point of the application
-- `components/` - Game UI components
-- `game/` - Game logic and physics engine integration
-- `assets/` - Images, sounds, and other static files
+The GitHub Actions workflow:
+1. Sets up a clean Linux environment with Java and Node.js
+2. Installs all dependencies
+3. Runs the Gradle patch to fix compatibility issues
+4. Creates a temporary keystore for signing the app
+5. Builds the app in the specified format (AAB or APK)
+6. Makes the build available for download
+
+No local setup required - everything happens in GitHub's cloud environment.
