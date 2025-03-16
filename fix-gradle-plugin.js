@@ -47,14 +47,14 @@ repositories {
 
 dependencies {
   implementation(gradleApi())
-  implementation("com.android.tools.build:gradle:7.4.2")
+  implementation("com.android.tools.build:gradle:8.1.0")
   implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.10")
   implementation(kotlin("stdlib"))
 }
 
 java {
-  sourceCompatibility = JavaVersion.VERSION_1_8
-  targetCompatibility = JavaVersion.VERSION_1_8
+  sourceCompatibility = JavaVersion.VERSION_17
+  targetCompatibility = JavaVersion.VERSION_17
 }
 
 publishing {
@@ -135,14 +135,28 @@ class ReactPlugin : Plugin<Project> {
   
   const gradleWrapperContent = `distributionBase=GRADLE_USER_HOME
 distributionPath=wrapper/dists
-distributionUrl=https\\://services.gradle.org/distributions/gradle-7.6-all.zip
+distributionUrl=https\\://services.gradle.org/distributions/gradle-8.3-all.zip
 zipStoreBase=GRADLE_USER_HOME
 zipStorePath=wrapper/dists
 `;
   
-  console.log(`Updating Gradle wrapper properties to use 7.6...`);
+  console.log(`Updating Gradle wrapper properties to use 8.3...`);
   fs.writeFileSync(gradleWrapperFile, gradleWrapperContent, 'utf8');
-  console.log('✅ Gradle wrapper updated to 7.6.');
+  console.log('✅ Gradle wrapper updated to 8.3.');
+  
+  // Set org.gradle.java.home in gradle.properties to use a specific JDK version if available
+  const gradlePropsPath = path.join(__dirname, 'android', 'gradle.properties');
+  let gradleProps = '';
+  if (fs.existsSync(gradlePropsPath)) {
+    gradleProps = fs.readFileSync(gradlePropsPath, 'utf8');
+  }
+  
+  // Add JVM arguments to force Java compatibility
+  if (!gradleProps.includes('org.gradle.jvmargs')) {
+    gradleProps += `\norg.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8 --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED`;
+    fs.writeFileSync(gradlePropsPath, gradleProps, 'utf8');
+    console.log('✅ Added JVM compatibility flags to gradle.properties');
+  }
   
   console.log('✅ All fixes applied successfully.');
 } catch (error) {
