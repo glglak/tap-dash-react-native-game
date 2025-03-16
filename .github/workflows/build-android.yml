@@ -1,0 +1,89 @@
+name: Build Android App
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build Type'
+        required: true
+        default: 'aab'
+        type: 'choice'
+        options:
+          - aab
+          - apk
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run Gradle patch
+        run: node ./gradle-plugin-patch.js
+
+      - name: Create necessary directories
+        run: |
+          mkdir -p android/app/src/main/assets
+          mkdir -p android/app/build/intermediates/assets/release/
+
+      - name: Generate Android keystore
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || 'android' }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS || 'androidkey' }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'android' }}
+        run: |
+          mkdir -p android/app
+          keytool -genkeypair -v -storetype PKCS12 -keystore android/app/release.keystore -alias $KEY_ALIAS -keyalg RSA -keysize 2048 -validity 10000 -storepass $KEYSTORE_PASSWORD -keypass $KEY_PASSWORD -dname "CN=Android Debug,O=Android,C=US"
+          echo "storePassword=$KEYSTORE_PASSWORD" > android/gradle.properties.keystore
+          echo "keyPassword=$KEY_PASSWORD" >> android/gradle.properties.keystore
+          echo "keyAlias=$KEY_ALIAS" >> android/gradle.properties.keystore
+          echo "storeFile=release.keystore" >> android/gradle.properties.keystore
+          cat android/gradle.properties android/gradle.properties.keystore > android/gradle.properties.new
+          mv android/gradle.properties.new android/gradle.properties
+
+      - name: Setup Gradle
+        run: |
+          cd android
+          chmod +x ./gradlew
+
+      - name: Generate bundle
+        if: ${{ github.event.inputs.build_type == 'aab' }}
+        run: |
+          cd android
+          ./gradlew bundleRelease --no-daemon
+
+      - name: Generate APK
+        if: ${{ github.event.inputs.build_type == 'apk' }}
+        run: |
+          cd android
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Upload AAB
+        if: ${{ github.event.inputs.build_type == 'aab' }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-release-bundle
+          path: android/app/build/outputs/bundle/release/app-release.aab
+
+      - name: Upload APK
+        if: ${{ github.event.inputs.build_type == 'apk' }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-release-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
