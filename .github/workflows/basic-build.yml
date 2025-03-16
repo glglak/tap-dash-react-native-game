@@ -1,0 +1,89 @@
+name: Basic Android Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build Type'
+        required: true
+        default: 'aab'
+        type: 'choice'
+        options:
+          - aab
+          - apk
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v2
+        with:
+          java-version: '11'
+          distribution: 'adopt'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run Gradle patch
+        run: node ./gradle-plugin-patch.js
+
+      - name: Create necessary directories
+        run: mkdir -p android/app/src/main/assets
+
+      - name: Generate Android keystore
+        run: |
+          cd android
+          keytool -genkey -v -keystore app/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+
+      - name: Build APK
+        if: ${{ github.event.inputs.build_type == 'apk' }}
+        run: cd android && ./gradlew assembleRelease --no-daemon
+
+      - name: Build AAB
+        if: ${{ github.event.inputs.build_type == 'aab' }}
+        run: cd android && ./gradlew bundleRelease --no-daemon
+
+      - name: Create GitHub release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: release-${{ github.run_number }}
+          release_name: Release ${{ github.run_number }}
+          draft: false
+          prerelease: false
+
+      - name: Upload APK to release
+        if: ${{ github.event.inputs.build_type == 'apk' }}
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: android/app/build/outputs/apk/release/app-release.apk
+          asset_name: app-release.apk
+          asset_content_type: application/vnd.android.package-archive
+
+      - name: Upload AAB to release
+        if: ${{ github.event.inputs.build_type == 'aab' }}
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: android/app/build/outputs/bundle/release/app-release.aab
+          asset_name: app-release.aab
+          asset_content_type: application/octet-stream
