@@ -4,9 +4,27 @@ A simple and addictive endless runner game where you tap to jump over obstacles.
 
 ## Building for Android
 
-### Local Build (With Java/JDK)
+### Local Build on Windows (Recommended)
 
-If you have Java installed (via Adoptium/Eclipse Temurin or any JDK):
+If you have Java installed via Adoptium/Eclipse Temurin:
+
+```bash
+# Build AAB file for Google Play
+npm run build:windows
+
+# Build APK file for direct installation
+npm run build:windows-apk
+```
+
+This Windows batch script will:
+- Automatically find your Java installation
+- Set JAVA_HOME correctly for the build process
+- Build the app with the correct Android SDK 34 settings
+- Show you exactly where the output file is located
+
+### Local Build on other platforms
+
+If you have Java installed and JAVA_HOME correctly set:
 
 ```bash
 # Build AAB file for Google Play
@@ -15,8 +33,6 @@ npm run build:local
 # Build APK file for direct installation
 npm run build:local-apk
 ```
-
-This uses your local Java installation and doesn't count against EAS build quota.
 
 ### Cloud-Based Options
 
@@ -54,10 +70,9 @@ npm run build
 
 If you encounter build issues:
 
-1. **Verify Java installation**: Make sure JAVA_HOME is set in your environment 
+1. **On Windows**: Use `npm run build:windows` which handles Java detection automatically
 2. **Gradle errors**: The patch script should fix common compatibility issues
 3. **EAS Build quota**: Free tier has limited builds per month
-4. **Missing files**: Check the exact output path shown in the console
 
 ## Development
 
@@ -71,5 +86,4 @@ npm start
 
 - This project uses Expo SDK 52 with React Native 0.73.4
 - The app has been configured to support Android SDK 34 as required by Google Play
-- We've created a patch for the React Native Gradle plugin to ensure compatibility
-- For local builds, we use a custom script that handles common compatibility issues
+- The build scripts handle compatibility issues with Gradle and Java
