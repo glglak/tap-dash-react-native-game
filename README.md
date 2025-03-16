@@ -2,25 +2,25 @@
 
 A simple and addictive endless runner game where you tap to jump over obstacles. Built with React Native and Expo.
 
-## Building for Android Without Java
+## Building for Android
 
-You have multiple options for building Android app bundles (.aab) or APK files without installing Java or the Android SDK locally.
+### Local Build (With Java/JDK)
 
-### Option 1: GitHub Actions - Release Method (Recommended)
+If you have Java installed (via Adoptium/Eclipse Temurin or any JDK):
 
-The simplest option that doesn't require EAS build quota or local setup:
+```bash
+# Build AAB file for Google Play
+npm run build:local
 
-1. Go to your GitHub repository: https://github.com/glglak/tap-dash-react-native-game
-2. Click on the "Actions" tab
-3. Select the "Basic Android Build" workflow
-4. Click "Run workflow" and select your build type (aab or apk)
-5. Wait for the build to complete (typically 5-10 minutes)
-6. Go to the "Releases" section of your repository
-7. Find the latest release and download your app file
+# Build APK file for direct installation
+npm run build:local-apk
+```
 
-This approach creates an official GitHub Release for each build, making it easy to download and track versions.
+This uses your local Java installation and doesn't count against EAS build quota.
 
-### Option 2: EAS Build with Google Play Profile
+### Cloud-Based Options
+
+#### Option 1: EAS Build with Google Play Profile
 
 This option uses Expo's cloud build service (requires EAS build quota):
 
@@ -32,7 +32,7 @@ npx eas-cli login
 npm run build:googleplay
 ```
 
-### Option 3: Standard EAS Build 
+#### Option 2: Standard EAS Build 
 
 Use Expo's cloud build service with standard profiles:
 
@@ -44,15 +44,20 @@ npm run build:preview
 npm run build
 ```
 
+## Android SDK Requirements
+
+- Target SDK Version: 34 (Required by Google Play)
+- Compile SDK Version: 34
+- Min SDK Version: 21
+
 ## Troubleshooting
 
 If you encounter build issues:
 
-1. **Try the GitHub Actions build**: This runs in GitHub's cloud and doesn't require local setup
-2. **Check Expo SDK compatibility**: This project uses Expo SDK 52 with React Native 0.73.4
-3. **Target SDK version**: The app is configured for Android 34 as required by Google Play
-4. **EAS Build quota**: Free tier has limited builds per month
-5. **Build downloads**: Built files are available in GitHub Releases
+1. **Verify Java installation**: Make sure JAVA_HOME is set in your environment 
+2. **Gradle errors**: The patch script should fix common compatibility issues
+3. **EAS Build quota**: Free tier has limited builds per month
+4. **Missing files**: Check the exact output path shown in the console
 
 ## Development
 
@@ -62,14 +67,9 @@ To start the development server:
 npm start
 ```
 
-## GitHub Actions Build Notes
+## Technical Notes
 
-The GitHub Actions workflow:
-1. Sets up a clean Linux environment with Java 11 and Node.js 16
-2. Installs all dependencies
-3. Runs the Gradle patch to fix compatibility issues
-4. Creates a debug keystore for signing the app
-5. Builds the app in the specified format (AAB or APK)
-6. Creates a GitHub Release with the build file attached
-
-No local setup required - everything happens in GitHub's cloud environment.
+- This project uses Expo SDK 52 with React Native 0.73.4
+- The app has been configured to support Android SDK 34 as required by Google Play
+- We've created a patch for the React Native Gradle plugin to ensure compatibility
+- For local builds, we use a custom script that handles common compatibility issues
