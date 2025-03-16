@@ -36,27 +36,58 @@ jobs:
       - name: Run Gradle patch
         run: node ./gradle-plugin-patch.js
 
+      - name: Create necessary directories
+        run: |
+          mkdir -p android/app/src/main/assets
+          mkdir -p android/app/build/intermediates/assets/release/
+
+      - name: Generate Android keystore
+        env:
+          KEYSTORE_PASSWORD: 'android'
+          KEY_ALIAS: 'androidkey' 
+          KEY_PASSWORD: 'android'
+        run: |
+          mkdir -p android/app
+          keytool -genkeypair -v -storetype PKCS12 -keystore android/app/release.keystore -alias $KEY_ALIAS -keyalg RSA -keysize 2048 -validity 10000 -storepass $KEYSTORE_PASSWORD -keypass $KEY_PASSWORD -dname "CN=Android Debug,O=Android,C=US"
+          echo "storePassword=$KEYSTORE_PASSWORD" > android/key.properties
+          echo "keyPassword=$KEY_PASSWORD" >> android/key.properties
+          echo "keyAlias=$KEY_ALIAS" >> android/key.properties
+          echo "storeFile=release.keystore" >> android/key.properties
+
+      - name: Update Gradle properties
+        run: |
+          echo "android.useAndroidX=true" > android/gradle.properties
+          echo "android.enableJetifier=true" >> android/gradle.properties
+          echo "org.gradle.jvmargs=-Xmx2048m -XX:MaxMetaspaceSize=512m" >> android/gradle.properties
+
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
       - name: Build APK
         if: ${{ github.event.inputs.build_type == 'apk' }}
-        run: cd android && ./gradlew assembleRelease --no-daemon
+        run: cd android && ./gradlew :app:assembleRelease --no-daemon
 
       - name: Build AAB
         if: ${{ github.event.inputs.build_type == 'aab' }}
-        run: cd android && ./gradlew bundleRelease --no-daemon
+        run: cd android && ./gradlew :app:bundleRelease --no-daemon
 
       - name: Create output directory
         run: mkdir -p output
 
       - name: Copy APK file
         if: ${{ github.event.inputs.build_type == 'apk' }}
-        run: cp android/app/build/outputs/apk/release/app-release.apk output/
+        run: |
+          find android/app/build/outputs -name "*.apk" -type f -exec ls -la {} \;
+          find android/app/build/outputs -name "*.apk" -type f -exec cp {} output/ \;
 
       - name: Copy AAB file
         if: ${{ github.event.inputs.build_type == 'aab' }}
-        run: cp android/app/build/outputs/bundle/release/app-release.aab output/
+        run: |
+          find android/app/build/outputs -name "*.aab" -type f -exec ls -la {} \;
+          find android/app/build/outputs -name "*.aab" -type f -exec cp {} output/ \;
+
+      - name: List output directory
+        run: ls -la output/
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
