@@ -2,6 +2,12 @@
 
 A simple and addictive endless runner game where you tap to jump over obstacles. Built with React Native and Expo.
 
+## Current Status
+
+**Build Status**: There are ongoing issues with building for Android SDK 34 that we're working to resolve.
+
+**Compatibility**: This project uses Expo SDK 52 with React Native 0.73.4 targeting Android SDK 34 for Google Play compliance.
+
 ## Building for Android
 
 ### Local Build on Windows (Recommended)
@@ -73,6 +79,7 @@ If you encounter build issues:
 1. **On Windows**: Use `npm run build:windows` which handles Java detection automatically
 2. **Gradle errors**: The patch script should fix common compatibility issues
 3. **EAS Build quota**: Free tier has limited builds per month
+4. **See TROUBLESHOOTING.md** for detailed guidance on resolving common issues
 
 ## Development
 
