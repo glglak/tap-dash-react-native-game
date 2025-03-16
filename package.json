@@ -51,6 +51,8 @@
     "build:fresh": "expo-prebuild.bat",
     "build:fresh-apk": "expo-prebuild.bat apk",
     "build:simple": "simple-build.bat",
+    "build:minimal": "minimal-build.bat",
+    "build:minimal-apk": "minimal-build.bat assembleRelease",
     "fix-plugin": "node ./fix-react-native-plugin.js",
     "clean": "rm -rf node_modules && npm install"
   }
