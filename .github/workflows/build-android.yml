@@ -17,18 +17,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v2
 
       - name: Setup Java
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v2
         with:
           distribution: 'zulu'
           java-version: '17'
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v2
         with:
-          node-version: '18'
+          node-version: '16'
           cache: 'npm'
 
       - name: Install dependencies
@@ -44,9 +44,9 @@ jobs:
 
       - name: Generate Android keystore
         env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || 'android' }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS || 'androidkey' }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'android' }}
+          KEYSTORE_PASSWORD: 'android'
+          KEY_ALIAS: 'androidkey' 
+          KEY_PASSWORD: 'android'
         run: |
           mkdir -p android/app
           keytool -genkeypair -v -storetype PKCS12 -keystore android/app/release.keystore -alias $KEY_ALIAS -keyalg RSA -keysize 2048 -validity 10000 -storepass $KEYSTORE_PASSWORD -keypass $KEY_PASSWORD -dname "CN=Android Debug,O=Android,C=US"
@@ -67,37 +67,33 @@ jobs:
         run: |
           cd android
           ./gradlew bundleRelease --no-daemon
+          cd ..
+          mkdir -p artifacts/aab
+          cp android/app/build/outputs/bundle/release/app-release.aab artifacts/aab/
 
       - name: Generate APK
         if: ${{ github.event.inputs.build_type == 'apk' }}
         run: |
           cd android
           ./gradlew assembleRelease --no-daemon
+          cd ..
+          mkdir -p artifacts/apk
+          cp android/app/build/outputs/apk/release/app-release.apk artifacts/apk/
 
-      - name: List build outputs (AAB)
-        if: ${{ github.event.inputs.build_type == 'aab' }}
+      - name: List build outputs
         run: |
-          ls -la android/app/build/outputs/bundle/release/
+          ls -la artifacts/*/
 
-      - name: List build outputs (APK)
-        if: ${{ github.event.inputs.build_type == 'apk' }}
-        run: |
-          ls -la android/app/build/outputs/apk/release/
-
-      # Using a different version of upload-artifact
       - name: Upload AAB
         if: ${{ github.event.inputs.build_type == 'aab' }}
         uses: actions/upload-artifact@v2
         with:
           name: app-release-bundle
-          path: android/app/build/outputs/bundle/release/app-release.aab
-          retention-days: 7
+          path: artifacts/aab/app-release.aab
 
-      # Using a different version of upload-artifact
       - name: Upload APK
         if: ${{ github.event.inputs.build_type == 'apk' }}
         uses: actions/upload-artifact@v2
         with:
           name: app-release-apk
-          path: android/app/build/outputs/apk/release/app-release.apk
-          retention-days: 7
+          path: artifacts/apk/app-release.apk
