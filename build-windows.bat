@@ -73,9 +73,9 @@ if "%1"=="--apk" (
 echo Building %BUILD_NAME%...
 echo.
 
-REM First apply the Gradle plugin fix
-echo Applying direct fix for the React Native Gradle plugin...
-call node ./fix-gradle-plugin.js
+REM First apply our React Native plugin fix
+echo Applying React Native Gradle plugin fix...
+call node ./fix-react-native-plugin.js
 echo.
 
 REM Clean any previous build artifacts
@@ -87,10 +87,20 @@ REM Set additional environment variables to help with Java compatibility
 set JAVA_OPTS=--add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED
 set GRADLE_OPTS=-Dorg.gradle.jvmargs="-Xmx2048m -XX:MaxMetaspaceSize=512m --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED"
 
+REM Make sure the debug keystore exists
+if not exist android\app\debug.keystore (
+  echo Creating debug keystore...
+  cd android\app
+  "%JAVA_HOME%\bin\keytool" -genkeypair -v -storetype PKCS12 -keystore debug.keystore -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Android Debug,O=Android,C=US"
+  cd ..\..
+  echo Created debug keystore.
+  echo.
+)
+
 REM Navigate to android directory and run the build with compatibility flags
 echo Running Gradle build command with Java compatibility flags...
 cd android
-call gradlew.bat :app:%BUILD_TYPE% --no-daemon --stacktrace
+call gradlew.bat :app:%BUILD_TYPE% --no-daemon --info
 set BUILD_RESULT=%ERRORLEVEL%
 cd ..
 
