@@ -50,6 +50,7 @@
     "build:windows-apk": "build-windows.bat --apk",
     "build:fresh": "expo-prebuild.bat",
     "build:fresh-apk": "expo-prebuild.bat apk",
+    "build:simple": "simple-build.bat",
     "fix-plugin": "node ./fix-react-native-plugin.js",
     "clean": "rm -rf node_modules && npm install"
   }
