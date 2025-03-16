@@ -26,7 +26,6 @@ buildscript {
 
 // Compatibility fix for React Native Gradle plugin
 def REACT_NATIVE_NODE_MODULE_PATH = new File(["node", "--print", "require.resolve('react-native/package.json')"].execute(null, rootDir).text.trim()).getParent()
-def REACT_NATIVE_GRADLE_PLUGIN_PATH = new File(["node", "--print", "require.resolve('@react-native/gradle-plugin/package.json')"].execute(null, rootDir).text.trim()).getParent()
 
 allprojects {
     repositories {
@@ -55,27 +54,37 @@ allprojects {
     configurations.all {
         resolutionStrategy.eachDependency { DependencyResolveDetails details ->
             if (details.requested.group == 'com.android.tools.build' && details.requested.name == 'gradle') {
-                details.useVersion '8.0.0'
+                details.useVersion '8.1.0'
             }
         }
     }
 }
 
-// Add this to your settings.gradle to apply our plugin fix
-gradle.beforeProject { project ->
-    if (project.name == 'react-native-gradle-plugin') {
-        project.buildscript {
-            doLast {
-                def pluginBuildFile = project.file('build.gradle.kts')
-                if (pluginBuildFile.exists()) {
-                    def content = pluginBuildFile.text
-                    if (content.contains(".getModule(")) {
-                        def patched = content.replaceAll(/(\.(get|findByName|getByName)\([^)]+\))\.getModule\("([^"]+)"\)/, '$1.module("$2")')
-                        pluginBuildFile.text = patched
-                        println "Patched React Native Gradle plugin build file to fix getModule reference"
-                    }
-                }
-            }
+// A fix for React Native plugin issue
+project.ext.react = [
+    enableHermes: true,
+    cliPath: "node_modules/react-native/cli.js",
+]
+
+// Fixes empty react-native.gradle
+task createReactNativeGradle {
+    doLast {
+        def filePath = "$rootProject.projectDir/../node_modules/@react-native/gradle-plugin/react-native.gradle"
+        File file = new File(filePath)
+        if (!file.exists()) {
+            file.parentFile.mkdirs()
+            file.text = """
+// Placeholder for React Native Gradle plugin
+"""
+        }
+    }
+}
+
+// Run this task before other tasks
+gradle.projectsEvaluated {
+    project.tasks.each { task ->
+        if (task.name.startsWith('bundle') || task.name.startsWith('assemble')) {
+            task.dependsOn createReactNativeGradle
         }
     }
 }
