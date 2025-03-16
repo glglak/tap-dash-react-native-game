@@ -1,31 +1,31 @@
 // Local settings for handling specific build issues
 // This ensures the React Native Gradle plugin is properly configured
 
-buildscript {
+pluginManagement {
     repositories {
         google()
         mavenCentral()
+        gradlePluginPortal()
     }
-    dependencies {
-        // Use specific versions that we know work with Android SDK 34
-        classpath 'com.android.tools.build:gradle:8.1.0'
-        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.10'
+
+    plugins {
+        // Versions compatible with Android SDK 34
+        id 'com.android.application' version '8.1.0'
+        id 'org.jetbrains.kotlin.android' version '1.8.10'
     }
 }
 
-// Extra configuration for React Native
-allprojects {
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
         google()
         mavenCentral()
-        mavenLocal()
-        maven {
-            // For React Native
-            url "$rootDir/../node_modules/react-native/android"
-        }
-        maven {
-            // For Expo modules
-            url "$rootDir/../node_modules/expo/android/maven"
-        }
+        maven { url "https://www.jitpack.io" }
+        
+        // For React Native
+        maven { url "$rootDir/../node_modules/react-native/android" }
+        
+        // For Expo modules
+        maven { url "$rootDir/../node_modules/expo/android/maven" }
     }
 }
