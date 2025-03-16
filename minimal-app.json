@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "Tap Dash",
+    "slug": "dash-tap",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#87CEEB"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0,
+      "enabled": true
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.glglak.tapdash",
+      "buildNumber": "1.0.0"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#87CEEB"
+      },
+      "package": "com.glglak.tapdash",
+      "versionCode": 2,
+      "permissions": [],
+      "targetSdkVersion": 34,
+      "compileSdkVersion": 34
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "5a12596e-c046-49f1-9fb8-9dc316b151e0"
+      }
+    },
+    "plugins": [],
+    "description": "A simple and addictive endless runner game where you tap to jump over obstacles.",
+    "primaryColor": "#87CEEB"
+  }
+}
