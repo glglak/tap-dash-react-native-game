@@ -44,6 +44,8 @@
     "build:submit": "npx eas-cli build --platform android --profile production --auto-submit",
     "build:docker": "node ./docker-build.js",
     "build:docker-apk": "node ./docker-build.js --apk",
+    "build:local": "node ./build-local.js",
+    "build:local-apk": "node ./build-local.js --apk",
     "clean": "rm -rf node_modules && npm install"
   }
 }
