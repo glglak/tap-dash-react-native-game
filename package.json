@@ -24,7 +24,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
-    "eas-cli": "^5.9.1"
+    "eas-cli": "^3.13.3"
   },
   "name": "tap-dash-game",
   "version": "1.0.0",
@@ -37,9 +37,9 @@
     "web": "npx expo start --web",
     "postinstall": "node ./gradle-plugin-patch.js",
     "prepare-gradlew": "cd android && chmod +x ./gradlew",
-    "build:android": "npx eas-cli build --platform android --profile production --clear-cache",
-    "build:preview": "npx eas-cli build --platform android --profile preview --clear-cache",
-    "build:dev": "npx eas-cli build --platform android --profile development --clear-cache",
+    "build": "node ./build-app.js",
+    "build:preview": "node ./build-app.js --preview",
+    "build:dev": "node ./build-app.js --dev",
     "clean": "rm -rf node_modules && npm install"
   }
 }
