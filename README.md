@@ -4,16 +4,25 @@ A simple and addictive endless runner game where you tap to jump over obstacles.
 
 ## Building for Android Without Java
 
-You have two options for building Android app bundles (.aab) or APK files without installing Java or the Android SDK locally.
+You have multiple options for building Android app bundles (.aab) or APK files without installing Java or the Android SDK locally.
 
-### Option 1: EAS Build (Cloud-based)
+### Option 1: EAS Build with Google Play Profile (Recommended)
 
-Use Expo's cloud build service to create your app bundle:
+This option uses a special build profile configured specifically for Google Play submission with Gradle 8.3:
 
 ```bash
 # Login to your Expo account first
 npx eas-cli login
 
+# Build AAB file for Google Play with Gradle 8.3
+npm run build:googleplay
+```
+
+### Option 2: Standard EAS Build 
+
+Use Expo's cloud build service with standard profiles:
+
+```bash
 # For internal testing (APK)
 npm run build:preview
 
@@ -21,15 +30,11 @@ npm run build:preview
 npm run build
 ```
 
-This will build your app in Expo's cloud and provide a download link when complete.
+### Option 3: Docker-based Build (Requires Docker)
 
-### Option 2: Docker-based Build (Local)
-
-If you have Docker installed, you can build locally without Java:
+If you have Docker installed and running:
 
 ```bash
-# Make sure Docker is running first
-
 # Build AAB file for Google Play submission
 npm run build:docker
 
@@ -37,16 +42,22 @@ npm run build:docker
 npm run build:docker-apk
 ```
 
-This uses a Docker container with the Android SDK pre-installed.
-
 ## Troubleshooting
 
 If you encounter build issues:
 
-1. **Check Expo SDK compatibility**: This project uses Expo SDK 52 with React Native 0.73.4
-2. **Target SDK version**: The app is configured for Android 34 as required by Google Play
-3. **Clean gradle**: Try `cd android && ./gradlew clean` if you have Java installed
-4. **Update dependencies**: Run `npm install` to ensure dependencies are up to date
+1. **Try the Google Play specific build**: `npm run build:googleplay`
+2. **Check Expo SDK compatibility**: This project uses Expo SDK 52 with React Native 0.73.4
+3. **Target SDK version**: The app is configured for Android 34 as required by Google Play
+4. **Clean gradle**: Try `cd android && ./gradlew clean` if you have Java installed
+5. **Update dependencies**: Run `npm install` to ensure dependencies are up to date
+
+## Common Build Errors
+
+- **Gradle plugin errors**: The patching script in this repo fixes most Gradle compatibility issues
+- **Concurrency limits**: EAS Build sometimes has a queue, especially on free tier accounts
+- **Missing Java**: Local builds require Java, use EAS Build (Option 1 or 2) to avoid this
+- **Docker errors**: Make sure Docker Desktop is running before using Option 3
 
 ## Development
 
@@ -62,9 +73,3 @@ npm start
 - `components/` - Game UI components
 - `game/` - Game logic and physics engine integration
 - `assets/` - Images, sounds, and other static files
-
-## Notes
-
-- The game uses Matter.js for physics
-- Sounds are managed with Expo AV
-- React Native Game Engine orchestrates game updates
