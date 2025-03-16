@@ -48,6 +48,7 @@
     "build:local-apk": "node ./build-local.js --apk",
     "build:windows": "build-windows.bat",
     "build:windows-apk": "build-windows.bat --apk",
+    "fix-plugin": "node ./fix-react-native-plugin.js",
     "clean": "rm -rf node_modules && npm install"
   }
 }
