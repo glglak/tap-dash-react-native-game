@@ -21,6 +21,17 @@
         "buildType": "apk",
         "gradleCommand": ":app:assembleDebug"
       }
+    },
+    "googleplay": {
+      "distribution": "store",
+      "android": {
+        "buildType": "app-bundle",
+        "gradleCommand": ":app:bundleRelease"
+      },
+      "env": {
+        "GRADLE_OPTS": "-Dorg.gradle.project.kotlinVersion=1.8.10"
+      },
+      "prebuildCommand": "npm run postinstall && echo 'distributionUrl=https\\://services.gradle.org/distributions/gradle-8.3-all.zip' > ./android/gradle/wrapper/gradle-wrapper.properties"
     }
   },
   "submit": {
