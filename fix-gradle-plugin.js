@@ -47,7 +47,7 @@ repositories {
 
 dependencies {
   implementation(gradleApi())
-  implementation("com.android.tools.build:gradle:8.0.0")
+  implementation("com.android.tools.build:gradle:7.4.2")
   implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.10")
   implementation(kotlin("stdlib"))
 }
@@ -135,14 +135,14 @@ class ReactPlugin : Plugin<Project> {
   
   const gradleWrapperContent = `distributionBase=GRADLE_USER_HOME
 distributionPath=wrapper/dists
-distributionUrl=https\\://services.gradle.org/distributions/gradle-8.0.0-all.zip
+distributionUrl=https\\://services.gradle.org/distributions/gradle-7.6-all.zip
 zipStoreBase=GRADLE_USER_HOME
 zipStorePath=wrapper/dists
 `;
   
-  console.log(`Updating Gradle wrapper properties to use 8.0.0...`);
+  console.log(`Updating Gradle wrapper properties to use 7.6...`);
   fs.writeFileSync(gradleWrapperFile, gradleWrapperContent, 'utf8');
-  console.log('✅ Gradle wrapper updated to 8.0.0.');
+  console.log('✅ Gradle wrapper updated to 7.6.');
   
   console.log('✅ All fixes applied successfully.');
 } catch (error) {
