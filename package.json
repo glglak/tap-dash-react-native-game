@@ -46,6 +46,8 @@
     "build:docker-apk": "node ./docker-build.js --apk",
     "build:local": "node ./build-local.js",
     "build:local-apk": "node ./build-local.js --apk",
+    "build:windows": "build-windows.bat",
+    "build:windows-apk": "build-windows.bat --apk",
     "clean": "rm -rf node_modules && npm install"
   }
 }
