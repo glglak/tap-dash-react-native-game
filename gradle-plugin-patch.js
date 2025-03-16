@@ -48,6 +48,65 @@ try {
     console.log('This is normal if the project hasn\'t been installed yet.');
   }
   
+  // Also create a direct patch file for the specific Kotlin build script error
+  // This fixes the specific error: Unresolved reference: getModule
+  const directPatchPath = path.join(
+    __dirname, 
+    'android', 
+    'build.gradle'
+  );
+  
+  // Create the android directory if it doesn't exist
+  if (!fs.existsSync(path.join(__dirname, 'android'))) {
+    fs.mkdirSync(path.join(__dirname, 'android'), { recursive: true });
+  }
+  
+  // Add a subproject patch for the React Native Gradle plugin
+  let buildGradleContent = '';
+  if (fs.existsSync(directPatchPath)) {
+    buildGradleContent = fs.readFileSync(directPatchPath, 'utf8');
+  }
+  
+  // Add a configuration block that patches the module function during the build
+  if (!buildGradleContent.includes('patchReactNativeGradlePlugin')) {
+    const patchBlock = `
+// This patch fixes the "Unresolved reference: getModule" error
+allprojects {
+    configurations.all {
+        resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+            if (details.requested.group == 'com.android.tools.build' && details.requested.name == 'gradle') {
+                details.useVersion '8.0.0'
+            }
+        }
+    }
+}
+
+// Add this to your settings.gradle to apply our plugin fix
+gradle.beforeProject { project ->
+    if (project.name == 'react-native-gradle-plugin') {
+        project.buildscript {
+            doLast {
+                def pluginBuildFile = project.file('build.gradle.kts')
+                if (pluginBuildFile.exists()) {
+                    def content = pluginBuildFile.text
+                    if (content.contains(".getModule(")) {
+                        def patched = content.replaceAll(/(\\.(get|findByName|getByName)\\([^)]+\\))\\.getModule\\("([^"]+)"\\)/, '$1.module("$2")')
+                        pluginBuildFile.text = patched
+                        println "Patched React Native Gradle plugin build file to fix getModule reference"
+                    }
+                }
+            }
+        }
+    }
+}
+`;
+    
+    // Add the patch block to the build.gradle file
+    buildGradleContent = buildGradleContent + patchBlock;
+    fs.writeFileSync(directPatchPath, buildGradleContent, 'utf8');
+    console.log('✅ Added Gradle plugin patching to build.gradle');
+  }
+  
   // Make sure the Android Gradle wrapper properties file exists with correct version
   const gradleWrapperDir = path.join(__dirname, 'android', 'gradle', 'wrapper');
   const gradleWrapperFile = path.join(gradleWrapperDir, 'gradle-wrapper.properties');
