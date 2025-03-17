@@ -1,96 +1,150 @@
-# Tap Dash React Native Game
+# Tap Dash Game
 
-A simple and addictive endless runner game where you tap to jump over obstacles. Built with React Native and Expo.
+A simple and addictive endless runner game where you tap to jump over obstacles.
 
-## Current Status
+## Project Setup
 
-**Build Status**: There are ongoing issues with building for Android SDK 34 that we're working to resolve.
+### Prerequisites
 
-**Compatibility**: This project uses Expo SDK 52 with React Native 0.73.4 targeting Android SDK 34 for Google Play compliance.
+- Node.js (LTS version)
+- JDK 21 (recommend: Eclipse Adoptium)
+- Android Studio with Android SDK 34 installed
+- Expo CLI (`npm install -g expo-cli`)
+- EAS CLI (`npm install -g eas-cli`)
 
-## Building for Android
+### Installation
 
-### Local Build on Windows (Recommended)
+1. Clone the repository
+   ```
+   git clone https://github.com/glglak/tap-dash-react-native-game.git
+   cd tap-dash-react-native-game
+   ```
 
-If you have Java installed via Adoptium/Eclipse Temurin:
+2. Install dependencies
+   ```
+   npm install
+   ```
 
-```bash
-# Build AAB file for Google Play
-npm run build:windows
-
-# Build APK file for direct installation
-npm run build:windows-apk
-```
-
-This Windows batch script will:
-- Automatically find your Java installation
-- Set JAVA_HOME correctly for the build process
-- Build the app with the correct Android SDK 34 settings
-- Show you exactly where the output file is located
-
-### Local Build on other platforms
-
-If you have Java installed and JAVA_HOME correctly set:
-
-```bash
-# Build AAB file for Google Play
-npm run build:local
-
-# Build APK file for direct installation
-npm run build:local-apk
-```
-
-### Cloud-Based Options
-
-#### Option 1: EAS Build with Google Play Profile
-
-This option uses Expo's cloud build service (requires EAS build quota):
-
-```bash
-# Login to your Expo account first
-npx eas-cli login
-
-# Build AAB file for Google Play with Gradle 8.3
-npm run build:googleplay
-```
-
-#### Option 2: Standard EAS Build 
-
-Use Expo's cloud build service with standard profiles:
-
-```bash
-# For internal testing (APK)
-npm run build:preview
-
-# For Google Play submission (AAB)
-npm run build
-```
-
-## Android SDK Requirements
-
-- Target SDK Version: 34 (Required by Google Play)
-- Compile SDK Version: 34
-- Min SDK Version: 21
-
-## Troubleshooting
-
-If you encounter build issues:
-
-1. **On Windows**: Use `npm run build:windows` which handles Java detection automatically
-2. **Gradle errors**: The patch script should fix common compatibility issues
-3. **EAS Build quota**: Free tier has limited builds per month
-4. **See TROUBLESHOOTING.md** for detailed guidance on resolving common issues
+3. Prebuild the Android project
+   ```
+   npm run prebuild
+   ```
 
 ## Development
 
-To start the development server:
+### Starting the development server
 
-```bash
+```
 npm start
 ```
 
-## Technical Notes
+### Running on Android device/emulator
 
-- This project uses Expo SDK 52 with React Native 0.73.4
-- The app has been configured to support Android SDK 34 as required by Google Play
-- The build scripts handle compatibility issues with Gradle and Java
+```
+npm run android
+```
+
+## Building the App
+
+### Local Builds
+
+We have several options for building the app locally:
+
+1. **Recommended: Quick Gradle Build (APK)**
+   ```
+   npm run gradle:apk
+   ```
+   Result will be at: `android/app/build/outputs/apk/release/app-release.apk`
+
+2. **Recommended: Quick Gradle Build (AAB for Play Store)**
+   ```
+   npm run gradle:bundle
+   ```
+   Result will be at: `android/app/build/outputs/bundle/release/app-release.aab`
+
+3. **Alternative: Fresh Build**
+   Completely regenerates the Android project and builds it.
+   ```
+   npm run build:fresh
+   ```
+
+4. **Alternative: Minimal Build**
+   A simpler, more direct build approach.
+   ```
+   npm run build:minimal
+   ```
+
+### Expo EAS Builds (Cloud)
+
+For building in the cloud with Expo's build service:
+
+1. **Preview Build (for testing)**
+   ```
+   npm run build:preview
+   ```
+
+2. **Production Build (for Play Store)**
+   ```
+   npm run build:production
+   ```
+
+## Maintenance and Troubleshooting
+
+### Cleaning the project
+
+To clean up all build artifacts and temporary files:
+
+```
+npm run clean
+```
+
+### JDK Configuration
+
+The build scripts expect JDK to be installed at:
+```
+C:\Program Files\Eclipse Adoptium\jdk-21.0.6.7-hotspot
+```
+
+If your JDK is installed elsewhere, please update the path in these files:
+- `gradle-build.bat`
+- `fresh-build.bat`
+- `cleanup.bat`
+
+### Common Build Issues
+
+1. **Resource busy or locked**
+   - Run the cleanup script: `npm run clean`
+   - Close any applications that might be using project files
+
+2. **Compilation errors**
+   - Make sure you have Android SDK 34 installed
+   - Run `npm run prebuild` to regenerate the Android project
+
+3. **Gradle errors**
+   - Try cleaning Gradle: `npm run clean:gradle`
+   - Try the more verbose Gradle build: `cd android && ./gradlew assembleRelease --info --stacktrace`
+
+## Project Structure
+
+- `/android` - Native Android code (generated by Expo)
+- `/assets` - Game assets (images, sounds)
+- `/components` - React components for the game
+- `/src` - Source code
+  - `/contexts` - React contexts for game state management
+
+## License
+
+This project is private and confidential.
+
+## Contributing
+
+When contributing to this repository, please first discuss the change you wish to make via issue or email.
+
+### Git Workflow
+
+1. Create a feature branch
+2. Make your changes
+3. Test your changes
+4. Submit a pull request
+
+Always run the cleanup script before committing to avoid including build artifacts in your commits.
