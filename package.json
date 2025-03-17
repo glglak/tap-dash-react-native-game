@@ -7,7 +7,6 @@
     "expo-dev-client": "~3.3.8",
     "expo-font": "~11.10.2",
     "expo-haptics": "~12.8.1",
-    "expo-sharing": "~11.10.0",
     "expo-splash-screen": "~0.26.4",
     "expo-status-bar": "~1.11.1",
     "expo-updates": "~0.24.9",
@@ -54,6 +53,8 @@
     "build:minimal": "minimal-build.bat",
     "build:minimal-apk": "minimal-build.bat assembleRelease",
     "fix-plugin": "node ./fix-react-native-plugin.js",
-    "clean": "rm -rf node_modules && npm install"
+    "clean": "rm -rf node_modules && rm -rf android/build && rm -rf android/app/build && npm install",
+    "clean-gradle": "cd android && ./gradlew clean && cd ..",
+    "rebuild": "npm run clean && npm run clean-gradle && npm run android"
   }
 }
