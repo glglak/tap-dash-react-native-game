@@ -60,6 +60,21 @@ allprojects {
     }
 }
 
+// Fix for Gradle version compatibility issues
+allprojects {
+    // Fix for the "Unresolved reference: getModule" error
+    afterEvaluate { project ->
+        if (project.hasProperty('android')) {
+            android {
+                // Fix for compatibility with Android Gradle Plugin 8.0+
+                buildFeatures {
+                    buildConfig true
+                }
+            }
+        }
+    }
+}
+
 // A fix for React Native plugin issue
 project.ext.react = [
     enableHermes: true,
