@@ -42,16 +42,16 @@ def enableProguardInReleaseBuilds = (findProperty('android.enableProguardInRelea
 def jscFlavor = 'org.webkit:android-jsc:+'
 
 android {
-    ndkVersion rootProject.ext.ndkVersion
-
-    buildToolsVersion rootProject.ext.buildToolsVersion
-    compileSdk rootProject.ext.compileSdkVersion
+    // Set these explicitly to fix the compileSdkVersion error
+    compileSdkVersion 34
+    buildToolsVersion "34.0.0"
+    ndkVersion "25.1.8937393"
 
     namespace 'com.glglak.tapdash'
     defaultConfig {
         applicationId 'com.glglak.tapdash'
-        minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
+        minSdkVersion 21
+        targetSdkVersion 34
         versionCode 2
         versionName "1.0.0"
     }
@@ -175,7 +175,7 @@ dependencies {
     }
     
     // Add AndroidX dependencies explicitly to ensure compatibility
-    implementation("androidx.core:core-ktx:${rootProject.ext.androidXCore}")
-    implementation("androidx.appcompat:appcompat:${rootProject.ext.androidXAppCompat}")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:${rootProject.ext.androidXLifecycle}")
+    implementation("androidx.core:core-ktx:1.10.1")
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")
 }
