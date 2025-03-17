@@ -1,50 +1,40 @@
 {
+  "cli": {
+    "version": ">= 3.13.3"
+  },
   "build": {
-    "preview": {
-      "distribution": "internal",
-      "android": {
-        "buildType": "apk",
-        "gradleCommand": ":app:assembleRelease",
-        "withoutCredentials": true
-      }
-    },
-    "production": {
-      "android": {
-        "buildType": "app-bundle",
-        "gradleCommand": ":app:bundleRelease"
-      }
-    },
     "development": {
       "developmentClient": true,
       "distribution": "internal",
       "android": {
-        "buildType": "apk",
-        "gradleCommand": ":app:assembleDebug"
+        "gradleCommand": ":app:assembleDebug",
+        "buildType": "apk"
       }
     },
-    "googleplay": {
-      "distribution": "store",
+    "preview": {
+      "distribution": "internal",
       "android": {
-        "buildType": "app-bundle",
-        "gradleCommand": ":app:bundleRelease"
-      },
-      "env": {
-        "GRADLE_OPTS": "-Dorg.gradle.project.kotlinVersion=1.8.10"
-      },
-      "prebuildCommand": "npm run postinstall && echo 'distributionUrl=https\\://services.gradle.org/distributions/gradle-8.3-all.zip' > ./android/gradle/wrapper/gradle-wrapper.properties"
+        "buildType": "apk"
+      }
+    },
+    "production": {
+      "android": {
+        "buildType": "app-bundle"
+      }
+    },
+    "local": {
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease",
+        "autoIncrement": false,
+        "withoutCredentials": true,
+        "runtimeVersion": {
+          "policy": "sdkVersion"
+        }
+      }
     }
   },
   "submit": {
-    "production": {
-      "android": {
-        "serviceAccountKeyPath": "./google-service-account.json",
-        "track": "internal"
-      }
-    }
-  },
-  "cli": {
-    "version": ">= 3.13.0",
-    "requireCommit": false,
-    "promptToConfigurePushNotifications": false
+    "production": {}
   }
 }
