@@ -55,6 +55,8 @@
     "fix-plugin": "node ./fix-react-native-plugin.js",
     "clean": "rm -rf node_modules && rm -rf android/build && rm -rf android/app/build && npm install",
     "clean-gradle": "cd android && ./gradlew clean && cd ..",
-    "rebuild": "npm run clean && npm run clean-gradle && npm run android"
+    "rebuild": "npm run clean && npm run clean-gradle && npm run android",
+    "fix:android": "node ./fix-android-build.js",
+    "fix:android-apk": "node ./fix-android-build.js --apk"
   }
 }
