@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
+import { Alert, Platform } from 'react-native';
+
+// Import Share directly from react-native
+// This is more reliable than expo-sharing for this case
 import { Share } from 'react-native';
 
 // Initial Achievements
@@ -77,7 +81,7 @@ export const GameProvider = ({ children }) => {
   // Update Score and Game Stats
   const updateGameStats = (newScore, hitObstacle = false) => {
     // Haptic Feedback
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
 
     // Update High Score
     if (newScore > highScore) {
@@ -107,7 +111,7 @@ export const GameProvider = ({ children }) => {
     setAchievements(updatedAchievements);
   };
 
-  // Share Score
+  // Share Score - Using React Native's Share API directly
   const shareScore = async (scoreToShare = null) => {
     try {
       // Use provided score or fall back to high score
@@ -121,16 +125,33 @@ export const GameProvider = ({ children }) => {
         message += `\n(My high score is ${highScore} points!)`;
       }
       
-      // Add store link if available
-      // message += '\nGet it at: https://play.google.com/store/apps/details?id=com.glglak.tapdash';
-      
-      // Use React Native's Share API for text content
-      await Share.share({
+      // Share using React Native's built-in Share API
+      const result = await Share.share({
         message: message,
         title: 'Share Your Tap Dash Score'
       });
+      
+      if (result.action === Share.sharedAction) {
+        if (result.activityType) {
+          // Shared with activity type of result.activityType
+          console.log(`Shared with: ${result.activityType}`);
+        } else {
+          // Shared
+          console.log('Shared successfully');
+        }
+      } else if (result.action === Share.dismissedAction) {
+        // Dismissed
+        console.log('Share dismissed');
+      }
     } catch (error) {
       console.error('Error sharing score', error);
+      
+      // Show a fallback alert if sharing fails
+      Alert.alert(
+        'Sharing Failed',
+        'Unable to share your score. Please try again.',
+        [{ text: 'OK' }]
+      );
     }
   };
 
