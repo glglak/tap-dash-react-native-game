@@ -38,29 +38,30 @@
     "ios": "npx expo run:ios",
     "web": "npx expo start --web",
     "postinstall": "node ./gradle-plugin-patch.js",
-    "prepare-gradlew": "cd android && chmod +x ./gradlew",
-    "build": "npx eas-cli build --platform android --profile production",
+    
+    "// Core development commands": "",
+    "prebuild": "npx expo prebuild --platform android --clean",
+    "gradle:apk": "gradle-build.bat",
+    "gradle:bundle": "gradle-build.bat bundle",
+    "cleanup": "cleanup.bat",
+
+    "// Build with Expo": "",
     "build:preview": "npx eas-cli build --platform android --profile preview",
-    "build:dev": "npx eas-cli build --platform android --profile development",
+    "build:production": "npx eas-cli build --platform android --profile production",
+    "build:development": "npx eas-cli build --platform android --profile development",
     "build:googleplay": "npx eas-cli build --platform android --profile googleplay --clear-cache",
     "build:submit": "npx eas-cli build --platform android --profile production --auto-submit",
-    "build:docker": "node ./docker-build.js",
-    "build:docker-apk": "node ./docker-build.js --apk",
+    
+    "// Local build utilities": "",
     "build:local": "node ./build-local.js",
     "build:local-apk": "node ./build-local.js --apk",
-    "build:windows": "build-windows.bat",
-    "build:windows-apk": "build-windows.bat --apk",
-    "build:fresh": "expo-prebuild.bat",
-    "build:fresh-apk": "expo-prebuild.bat apk",
-    "build:simple": "simple-build.bat",
+    "build:fresh": "fresh-build.bat",
     "build:minimal": "minimal-build.bat",
     "build:minimal-apk": "minimal-build.bat assembleRelease",
-    "fix-plugin": "node ./fix-react-native-plugin.js",
-    "clean": "rm -rf node_modules && rm -rf android/build && rm -rf android/app/build && npm install",
-    "clean-gradle": "cd android && ./gradlew clean && cd ..",
-    "rebuild": "npm run clean && npm run clean-gradle && npm run android",
-    "fix:android": "node ./fix-android-build.js",
-    "fix:android-apk": "node ./fix-android-build.js --apk",
-    "build:directly": "cd android && .\\gradlew bundleRelease"
+    
+    "// Maintenance": "",
+    "clean": "cleanup.bat",
+    "clean:gradle": "cd android && .\\gradlew clean && cd ..",
+    "fix-plugin": "node ./fix-react-native-plugin.js"
   }
 }
