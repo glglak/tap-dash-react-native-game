@@ -19,8 +19,7 @@ react {
     cliFile = new File(["node", "--print", "require.resolve('@expo/cli', { paths: [require.resolve('expo/package.json')] })"].execute(null, rootDir).text.trim())
     bundleCommand = "export:embed"
 
-    /* Autolinking */
-    autolinkLibrariesWithApp()
+    // Removed the autolinkLibrariesWithApp() call since it's not available in this version
 }
 
 /**
@@ -178,4 +177,20 @@ dependencies {
     implementation("androidx.core:core-ktx:1.10.1")
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")
+    
+    // Add Expo modules to ensure they're linked
+    implementation project(':expo-modules-core')
+    // Add other Expo modules as needed
+    implementation project(':expo-av')
+    implementation project(':expo-haptics')
+    implementation project(':expo-splash-screen')
+    implementation project(':expo-status-bar')
+    implementation project(':expo-updates')
+    implementation project(':expo-font')
+    implementation project(':expo-asset')
+    implementation project(':expo-dev-client')
 }
+
+// Explicitly apply the Expo project includes to ensure modules are linked
+apply from: new File(["node", "--print", "require.resolve('expo/package.json')"].execute(null, rootDir).text.trim(), "../scripts/autolinking.gradle")
+useExpoModules()
